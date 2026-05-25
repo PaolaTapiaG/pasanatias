@@ -13,17 +13,17 @@ class MetodoPago extends Model
     protected $primaryKey = 'id_metodo_pago';
 
     protected $fillable = [
-        'nombre',        // 'Efectivo', 'Transferencia', 'QR', etc.
+        'nombre',
         'descripcion',
-        'activo',
+        'requiere_referencia',
+        'estado',
     ];
 
     protected $casts = [
-        'activo'    => 'boolean',
-        'creado_en' => 'datetime',
+        'requiere_referencia' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
-
-    // ─── Relaciones ───────────────────────────────────────────────
 
     public function cobros()
     {
@@ -35,10 +35,13 @@ class MetodoPago extends Model
         return $this->hasMany(Factura::class, 'id_metodo_pago');
     }
 
-    // ─── Scopes ───────────────────────────────────────────────────
-
     public function scopeActivos($query)
     {
-        return $query->where('activo', true);
+        return $query->where('estado', 'activo');
+    }
+
+    public function getEsEfectivoAttribute(): bool
+    {
+        return str_contains(mb_strtolower($this->nombre ?? ''), 'efectivo');
     }
 }

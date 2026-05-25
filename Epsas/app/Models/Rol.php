@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class Rol extends Model
 {
@@ -19,5 +21,12 @@ class Rol extends Model
     public function empleados(): HasMany
     {
         return $this->hasMany(Empleado::class, 'id_rol', 'id_rol');
+    }
+
+    public static function cachedOrderedList(): Collection
+    {
+        return Cache::remember('roles:ordered-list', now()->addHour(), fn () => static::query()
+            ->orderBy('nombre')
+            ->get());
     }
 }

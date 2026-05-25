@@ -21,6 +21,7 @@ class Cobro extends Model
         'id_factura',
         'id_metodo_pago',
         'id_empleado',
+        'id_orden_pago',
     ];
 
     public function factura(): BelongsTo
@@ -36,5 +37,10 @@ class Cobro extends Model
     public function empleado(): BelongsTo
     {
         return $this->belongsTo(Empleado::class, 'id_empleado', 'id_empleado');
+    }
+
+    public function ordenPago(): BelongsTo
+    {
+        return $this->belongsTo(OrdenPago::class, 'id_orden_pago', 'id_orden_pago');
     }
 }

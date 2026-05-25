@@ -2,26 +2,45 @@
 
 @section('title', 'Reportes - EPSAS')
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const chartConfig = {
+        ingresos: '#ff7a1a',
+        egresos: '#475569',
+        primary: '#0ea5e9',
+        success: '#10b981',
+        danger: '#ef4444'
+    };
+</script>
+@endpush
+
 @section('content')
-<div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.15),_transparent_20%),linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)]">
-    @include('slideboard.sidebaradmin')
+<div class="page-background min-h-screen">
+    @include('partials.role-sidebar')
 
     <div data-admin-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
-        <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-blue-700">Reportes</p>
-                    <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Analisis operativo</h1>
-                </div>
-            </div>
-        </header>
+        @include('partials.header-with-notifications', [
+            'headerRole' => 'Reportes',
+            'headerTitle' => 'Ingresos y egresos',
+        ])
 
         <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <section class="mb-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Acciones de reportes</p>
+                        <p class="mt-1 text-sm text-slate-500">Registra egresos desde aqui y manten el reporte financiero actualizado.</p>
+                    </div>
+                    <a href="{{ route('admin.gastos.index') }}" class="inline-flex w-full items-center justify-center rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 sm:w-auto">Registrar gasto</a>
+                </div>
+            </section>
+
+            <section class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                 <form method="GET" class="grid gap-4 lg:grid-cols-[0.8fr_0.8fr_1fr_auto]">
-                    <input type="date" name="desde" value="{{ $desde }}" class="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
-                    <input type="date" name="hasta" value="{{ $hasta }}" class="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
-                    <select name="periodo" class="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
+                    <input type="date" name="desde" value="{{ $desde }}" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none">
+                    <input type="date" name="hasta" value="{{ $hasta }}" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none">
+                    <select name="periodo" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none">
                         <option value="">Todos los periodos</option>
                         @foreach ($periodos as $periodo)
                             <option value="{{ $periodo->id_periodo }}" @selected((string) $periodoId === (string) $periodo->id_periodo)>{{ $periodo->nombre }}</option>
@@ -31,11 +50,115 @@
                 </form>
             </section>
 
-            <section class="mt-6 grid gap-4 md:grid-cols-4">
-                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">Recaudado</p><p class="mt-3 text-3xl font-bold text-slate-900">Bs {{ number_format((float) $resumen['recaudado'], 2) }}</p></article>
-                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">Cobros</p><p class="mt-3 text-3xl font-bold text-slate-900">{{ $resumen['cobros'] }}</p></article>
-                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">Consumo facturado</p><p class="mt-3 text-3xl font-bold text-slate-900">{{ number_format((float) $resumen['consumo_m3'], 2) }} m3</p></article>
-                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">Saldo moroso</p><p class="mt-3 text-3xl font-bold text-slate-900">Bs {{ number_format((float) $resumen['saldo_moroso'], 2) }}</p></article>
+            <section class="mt-6 grid gap-4 md:grid-cols-5">
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="theme-muted text-sm text-slate-500">Ingresos</p><p class="theme-text mt-3 text-3xl font-bold text-slate-900">Bs {{ number_format((float) $resumen['recaudado'], 2) }}</p></article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="theme-muted text-sm text-slate-500">Egresos</p><p class="mt-3 text-3xl font-bold text-amber-600">Bs {{ number_format((float) $resumen['egresos'], 2) }}</p></article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="theme-muted text-sm text-slate-500">Cobros</p><p class="theme-text mt-3 text-3xl font-bold text-slate-900">{{ $resumen['cobros'] }}</p></article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="theme-muted text-sm text-slate-500">Consumo facturado</p><p class="theme-text mt-3 text-3xl font-bold text-slate-900">{{ number_format((float) $resumen['consumo_m3'], 2) }} m3</p></article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"><p class="theme-muted text-sm text-slate-500">Saldo moroso</p><p class="mt-3 text-3xl font-bold text-rose-600">Bs {{ number_format((float) $resumen['saldo_moroso'], 2) }}</p></article>
+            </section>
+
+            <section class="mt-6 grid gap-4 md:grid-cols-3 xl:grid-cols-4">
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="theme-muted text-sm text-slate-500">Usuarios nuevos del mes</p>
+                    <p class="theme-text mt-3 text-3xl font-bold text-slate-900">{{ $resumen['nuevos_socios_mes'] }}</p>
+                </article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="theme-muted text-sm text-slate-500">Multas del mes</p>
+                    <p class="mt-3 text-3xl font-bold text-rose-600">Bs {{ number_format((float) $resumen['multas_mes'], 2) }}</p>
+                </article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="theme-muted text-sm text-slate-500">Lecturaciones del mes</p>
+                    <p class="theme-text mt-3 text-3xl font-bold text-slate-900">{{ $resumen['lecturas_mes'] }}</p>
+                </article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="theme-muted text-sm text-slate-500">Balance neto</p>
+                    <p class="mt-3 text-3xl font-bold {{ ($resumen['recaudado'] - $resumen['egresos']) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">Bs {{ number_format((float) ($resumen['recaudado'] - $resumen['egresos']), 2) }}</p>
+                </article>
+            </section>
+
+            <section class="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+                <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="theme-text text-xl font-semibold text-slate-900">Flujo financiero</h2>
+                    <p class="theme-muted mt-2 text-sm text-slate-500">Comparativo de ingresos y egresos por fecha.</p>
+                    <div class="mt-6">
+                        @if ($financeBars->isNotEmpty())
+                            <canvas id="financeChart" height="80"></canvas>
+                        @else
+                            <div class="rounded-3xl border border-dashed border-slate-200 px-6 py-20 text-center text-sm text-slate-500">No hay ingresos ni egresos en este rango.</div>
+                        @endif
+                    </div>
+                </article>
+                <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="theme-text text-xl font-semibold text-slate-900">Distribucion de gastos</h2>
+                    <p class="theme-muted mt-2 text-sm text-slate-500">Categorias registradas dentro del rango seleccionado.</p>
+                    <div class="mt-6 flex flex-col items-center gap-6">
+                        <canvas id="expenseChart" height="100"></canvas>
+                        <div class="w-full space-y-3">
+                            @foreach ($expenseSegments as $segment)
+                                <div class="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <span class="h-3 w-3 rounded-full" style="background: {{ $segment['color'] }}"></span>
+                                        {{ $segment['categoria'] }}
+                                    </span>
+                                    <span class="text-sm font-bold text-slate-900">{{ number_format((float) $segment['percent'], 1) }}%</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="mt-6 grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+                <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="theme-text text-xl font-semibold text-slate-900">Indicadores mensuales</h2>
+                    <p class="theme-muted mt-2 text-sm text-slate-500">Usuarios nuevos y lecturaciones registradas durante el año.</p>
+                    <div class="mt-6 space-y-4">
+                        @foreach ($actividadMensual as $mes)
+                            <div>
+                                <div class="mb-1 flex items-center justify-between text-xs font-semibold text-slate-500">
+                                    <span>{{ $mes['mes'] }}</span>
+                                    <span>{{ $mes['usuarios'] }} usuarios - {{ $mes['lecturas'] }} lecturas</span>
+                                </div>
+                                <div class="grid gap-1">
+                                    <div class="h-3 rounded-full bg-slate-100">
+                                        <div class="h-3 rounded-full bg-[#ff7a1a]" style="width: {{ round(((int) $mes['usuarios'] / $monthlyMax) * 100, 2) }}%"></div>
+                                    </div>
+                                    <div class="h-3 rounded-full bg-slate-100">
+                                        <div class="h-3 rounded-full bg-[#475569]" style="width: {{ round(((int) $mes['lecturas'] / $monthlyMax) * 100, 2) }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                        <div class="flex flex-wrap gap-3 pt-2 text-xs font-semibold text-slate-500">
+                            <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-[#ff7a1a]"></span>Usuarios</span>
+                            <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-[#475569]"></span>Lecturaciones</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="theme-text text-xl font-semibold text-slate-900">Resumen ejecutivo</h2>
+                    <p class="theme-muted mt-2 text-sm text-slate-500">Lectura rapida del comportamiento mensual.</p>
+                    <div class="mt-6 grid gap-4 md:grid-cols-2">
+                        @foreach ($actividadMensual->take(6) as $mes)
+                            <div class="theme-soft rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <p class="theme-text text-base font-semibold text-slate-900">{{ $mes['mes'] }}</p>
+                                <p class="theme-muted mt-2 text-sm text-slate-500">Ingresos: Bs {{ number_format((float) $mes['ingresos'], 2) }}</p>
+                                <p class="theme-muted text-sm text-slate-500">Egresos: Bs {{ number_format((float) $mes['egresos'], 2) }}</p>
+                                <p class="theme-muted text-sm text-slate-500">Usuarios: {{ $mes['usuarios'] }}</p>
+                                <p class="theme-muted text-sm text-slate-500">Lecturas: {{ $mes['lecturas'] }}</p>
+                                <div class="mt-3 grid gap-1">
+                                    <div class="h-2 rounded-full bg-white">
+                                        <div class="h-2 rounded-full bg-[#ff7a1a]" style="width: {{ round(((float) $mes['ingresos'] / $monthlyMoneyMax) * 100, 2) }}%"></div>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-white">
+                                        <div class="h-2 rounded-full bg-[#475569]" style="width: {{ round(((float) $mes['egresos'] / $monthlyMoneyMax) * 100, 2) }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </article>
             </section>
 
             <div class="mt-6 grid gap-6 xl:grid-cols-3">
@@ -43,7 +166,175 @@
                 @include('reportes.consumos')
                 @include('reportes.morosos')
             </div>
+
+            <section class="theme-card mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="theme-text text-xl font-semibold text-slate-900">Ultimos egresos</h2>
+                        <p class="theme-muted mt-2 text-sm text-slate-500">Resumen de gastos incluidos en el reporte.</p>
+                    </div>
+                </div>
+                <div class="mt-6 space-y-3">
+                    @forelse ($gastos->take(8) as $gasto)
+                        <div class="theme-soft flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div>
+                                <p class="theme-text text-sm font-semibold text-slate-900">{{ $gasto->concepto }}</p>
+                                <p class="theme-muted text-xs text-slate-500">{{ $gasto->categoria }} · {{ optional($gasto->fecha_gasto)->format('d/m/Y') }}</p>
+                            </div>
+                            <span class="text-sm font-bold text-amber-600">Bs {{ number_format((float) $gasto->monto, 2) }}</span>
+                        </div>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-slate-300 px-6 py-10 text-center text-sm text-slate-500">No se registraron egresos en este rango.</div>
+                    @endforelse
+                </div>
+            </section>
         </main>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de Flujo Financiero
+        const financeCtx = document.getElementById('financeChart');
+        if (financeCtx) {
+            const financeBars = @json($financeBars);
+            
+            new Chart(financeCtx, {
+                type: 'bar',
+                data: {
+                    labels: financeBars.map(b => b.label),
+                    datasets: [
+                        {
+                            label: 'Ingresos',
+                            data: financeBars.map(b => b.ingresos),
+                            backgroundColor: '#ff7a1a',
+                            borderColor: '#ff7a1a',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            barThickness: 'flex',
+                            maxBarThickness: 12
+                        },
+                        {
+                            label: 'Egresos',
+                            data: financeBars.map(b => b.egresos),
+                            backgroundColor: '#475569',
+                            borderColor: '#475569',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            barThickness: 'flex',
+                            maxBarThickness: 12
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 12, weight: '600' },
+                                color: '#64748b',
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 13, weight: '600' },
+                            bodyFont: { size: 12 },
+                            titleColor: '#fff',
+                            bodyColor: '#cbd5e1',
+                            displayColors: true,
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': Bs ' + context.parsed.y.toLocaleString('es-BO', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 },
+                                callback: function(value) {
+                                    return 'Bs ' + value.toLocaleString('es-BO', { maximumFractionDigits: 0 });
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de Distribución de Gastos
+        const expenseCtx = document.getElementById('expenseChart');
+        if (expenseCtx) {
+            const expenseSegments = @json($expenseSegments);
+            
+            new Chart(expenseCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: expenseSegments.map(s => s.categoria),
+                    datasets: [{
+                        data: expenseSegments.map(s => parseFloat(s.percent)),
+                        backgroundColor: expenseSegments.map(s => s.color),
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 13, weight: '600' },
+                            bodyFont: { size: 12 },
+                            titleColor: '#fff',
+                            bodyColor: '#cbd5e1',
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endpush

@@ -8,6 +8,8 @@ use App\Models\Factura;
 use App\Models\HistorialPago;
 use App\Models\MetodoPago;
 use App\Models\Socio;
+use App\Services\BillingAutomationService;
+use App\Support\OperationalCache;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -16,31 +18,86 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CobroController extends Controller
 {
+    public function __construct(private BillingAutomationService $billingAutomation)
+    {
+    }
+
     public function index(Request $request)
     {
-        $search = trim((string) $request->query('buscar', ''));
+        $this->billingAutomation->ensureCurrentInvoices();
 
-        $socios = Socio::query()
-            ->with(['persona', 'facturasPendientes.cobros'])
-            ->where('estado', '!=', 'inactivo')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($builder) use ($search) {
-                    $builder->where('numero_socio', 'ilike', "%{$search}%")
-                        ->orWhereHas('persona', function ($personaQuery) use ($search) {
-                            $personaQuery->where('nombres', 'ilike', "%{$search}%")
-                                ->orWhere('apellidos', 'ilike', "%{$search}%")
-                                ->orWhere('cedula_identidad', 'ilike', "%{$search}%");
-                        });
-                });
-            })
-            ->get()
-            ->map(fn (Socio $socio) => $this->mapSocioCobroData($socio))
-            ->filter(fn (array $socio) => count($socio['facturas_pendientes']) > 0)
-            ->sortBy('nombre_completo')
-            ->values();
+        return view('cobros.index', $this->paymentIndexData($request));
+    }
+
+    public function warmIndexCache(): void
+    {
+        $this->paymentIndexData(Request::create('/admin/cobros', 'GET'));
+    }
+
+    private function paymentIndexData(Request $request): array
+    {
+        $search = trim((string) $request->query('buscar', ''));
+        Cache::add('cobros.index.version', 1, now()->addYears(2));
+        $cacheKey = 'cobros.index.v' . Cache::get('cobros.index.version', 1) . '.' . md5($search);
+
+        $socios = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($search) {
+            $pagosPorFactura = DB::table('cobros')
+                ->selectRaw("id_factura, COALESCE(SUM(CASE WHEN estado <> 'anulado' THEN monto_pagado ELSE 0 END), 0) as pagado")
+                ->groupBy('id_factura');
+
+            return DB::table('socios as s')
+                ->join('personas as p', 'p.id_persona', '=', 's.id_persona')
+                ->join('facturas as f', function ($join) {
+                    $join->on('f.id_socio', '=', 's.id_socio')
+                        ->whereIn('f.estado', ['pendiente', 'vencida', 'parcial']);
+                })
+                ->leftJoinSub($pagosPorFactura, 'cp', function ($join) {
+                    $join->on('cp.id_factura', '=', 'f.id_factura');
+                })
+                ->where('s.estado', '!=', 'inactivo')
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($builder) use ($search) {
+                        $builder->where('s.numero_socio', 'ilike', "%{$search}%")
+                            ->orWhere('p.nombres', 'ilike', "%{$search}%")
+                            ->orWhere('p.apellidos', 'ilike', "%{$search}%")
+                            ->orWhere('p.cedula_identidad', 'ilike', "%{$search}%");
+                    });
+                })
+                ->groupBy('s.id_socio', 's.numero_socio', 'p.nombres', 'p.apellidos', 'p.cedula_identidad', 'p.telefono', 'p.email')
+                ->havingRaw('SUM(GREATEST(f.total - COALESCE(cp.pagado, 0), 0)) > 0')
+                ->orderByRaw("TRIM(COALESCE(p.nombres, '') || ' ' || COALESCE(p.apellidos, '')) asc")
+                ->get([
+                    's.id_socio',
+                    's.numero_socio',
+                    'p.cedula_identidad',
+                    'p.telefono',
+                    'p.email',
+                    DB::raw("TRIM(COALESCE(p.nombres, '') || ' ' || COALESCE(p.apellidos, '')) as nombre_completo"),
+                    DB::raw('COUNT(DISTINCT f.id_factura) as facturas_pendientes_count'),
+                    DB::raw('ROUND(SUM(f.monto_consumo + f.cargo_fijo - f.descuentos), 2) as subtotal_pendiente'),
+                    DB::raw('ROUND(SUM(f.recargo_mora), 2) as recargos_pendientes'),
+                    DB::raw('ROUND(SUM(GREATEST(f.total - COALESCE(cp.pagado, 0), 0)), 2) as total_pendiente'),
+                ])
+                ->map(function ($row) {
+                    return [
+                        'id_socio' => $row->id_socio,
+                        'nombre_completo' => $row->nombre_completo,
+                        'codigo_display' => $row->numero_socio ?: ('SOC-' . str_pad((string) $row->id_socio, 4, '0', STR_PAD_LEFT)),
+                        'cedula_identidad' => $row->cedula_identidad,
+                        'telefono' => $row->telefono,
+                        'email' => $row->email,
+                        'facturas_pendientes' => array_fill(0, (int) $row->facturas_pendientes_count, null),
+                        'subtotal_pendiente' => (float) $row->subtotal_pendiente,
+                        'recargos_pendientes' => (float) $row->recargos_pendientes,
+                        'total_pendiente' => (float) $row->total_pendiente,
+                    ];
+                })
+                ->values();
+        });
 
         $resumen = [
             'socios_con_pendientes' => $socios->count(),
@@ -48,22 +105,24 @@ class CobroController extends Controller
             'monto_total_pendiente' => round($socios->sum('total_pendiente'), 2),
         ];
 
-        return view('cobros.index', [
+        return [
             'socios' => $socios,
             'search' => $search,
             'resumen' => $resumen,
-        ]);
+        ];
     }
 
     public function show(Request $request, Socio $socio)
     {
-        $selectedDate = $request->query('fecha', now()->toDateString());
+        $this->billingAutomation->ensureSocioInvoices($socio->id_socio);
         $socio->load(['persona', 'facturasPendientes.periodo', 'facturasPendientes.cobros']);
 
         $selectedSocio = $this->mapSocioCobroData($socio);
 
         $metodosPago = MetodoPago::query()
-            ->where('estado', 'activo')
+            ->select(['id_metodo_pago', 'nombre', 'estado', 'requiere_referencia'])
+            ->activos()
+            ->whereIn(DB::raw('LOWER(nombre)'), ['efectivo', 'qr'])
             ->orderBy('nombre')
             ->get();
 
@@ -81,7 +140,6 @@ class CobroController extends Controller
         return view('cobros.create', [
             'selectedSocio' => $selectedSocio,
             'metodosPago' => $metodosPago,
-            'selectedDate' => $selectedDate,
             'cobrosSocio' => $cobrosSocio,
             'qrCuotaSvg' => $qrCuotaMonto > 0 ? $this->makeQrSvg($this->buildQrPayload($selectedSocio, 'CUOTA', $qrCuotaMonto)) : null,
             'qrMoraSvg' => $qrMoraMonto > 0 ? $this->makeQrSvg($this->buildQrPayload($selectedSocio, 'MORA', $qrMoraMonto)) : null,
@@ -90,21 +148,47 @@ class CobroController extends Controller
         ]);
     }
 
+    public function result()
+    {
+        $paymentResult = session('payment_result');
+
+        if (!$paymentResult || empty($paymentResult['factura_ids'])) {
+            return redirect()->route('secretaria.cobros.index');
+        }
+
+        $facturas = Factura::query()
+            ->with(['socio.persona', 'periodo', 'lectura.medidor'])
+            ->whereIn('id_factura', $paymentResult['factura_ids'])
+            ->orderByDesc('fecha_emision')
+            ->get();
+
+        return view('cobros.result', [
+            'paymentResult' => $paymentResult,
+            'facturas' => $facturas,
+            'primaryFactura' => $facturas->first(),
+        ]);
+    }
+
     public function store(Request $request, Socio $socio)
     {
         $data = $request->validate([
-            'fecha_pago' => ['required', 'date'],
             'id_metodo_pago' => ['required', 'exists:metodos_pago,id_metodo_pago'],
             'cantidad_pagada' => ['required', 'numeric', 'min:0.01'],
             'factura_ids' => ['required', 'array', 'min:1'],
             'factura_ids.*' => ['integer', 'exists:facturas,id_factura'],
             'comprobante' => ['nullable', 'string', 'max:100'],
         ]);
+        $fechaPago = now()->toDateString();
 
         $empleado = $this->resolveEmpleado();
 
         try {
-            $resultado = DB::transaction(function () use ($data, $empleado, $socio) {
+            $resultado = DB::transaction(function () use ($data, $empleado, $socio, $fechaPago) {
+                $metodoPago = MetodoPago::query()
+                    ->activos()
+                    ->whereIn(DB::raw('LOWER(nombre)'), ['efectivo', 'qr'])
+                    ->findOrFail($data['id_metodo_pago']);
+
                 $facturas = Factura::query()
                     ->with(['cobros'])
                     ->where('id_socio', $socio->id_socio)
@@ -125,7 +209,8 @@ class CobroController extends Controller
                             'pendiente' => $pendiente,
                         ];
                     })
-                    ->filter(fn (array $item) => $item['pendiente'] > 0);
+                    ->filter(fn (array $item) => $item['pendiente'] > 0)
+                    ->values();
 
                 if ($facturasPendientes->isEmpty()) {
                     throw new \RuntimeException('Las facturas seleccionadas ya no tienen saldo pendiente.');
@@ -134,8 +219,22 @@ class CobroController extends Controller
                 $totalSeleccionado = round($facturasPendientes->sum('pendiente'), 2);
                 $cantidadPagada = round((float) $data['cantidad_pagada'], 2);
 
-                if ($cantidadPagada < $totalSeleccionado) {
-                    throw new \RuntimeException('La cantidad pagada no cubre el total seleccionado.');
+                if ($metodoPago->es_efectivo && $cantidadPagada < $totalSeleccionado) {
+                    throw ValidationException::withMessages([
+                        'cantidad_pagada' => 'La cantidad en efectivo no cubre el total seleccionado.',
+                    ]);
+                }
+
+                if (!$metodoPago->es_efectivo && abs($cantidadPagada - $totalSeleccionado) > 0.009) {
+                    throw ValidationException::withMessages([
+                        'cantidad_pagada' => 'Para ' . $metodoPago->nombre . ' el monto debe coincidir exactamente con el total seleccionado.',
+                    ]);
+                }
+
+                if ($metodoPago->requiere_referencia && blank($data['comprobante'] ?? null)) {
+                    throw ValidationException::withMessages([
+                        'comprobante' => 'Debes registrar una referencia o comprobante para ' . $metodoPago->nombre . '.',
+                    ]);
                 }
 
                 $cobros = collect();
@@ -145,19 +244,19 @@ class CobroController extends Controller
                     $montoPendiente = $item['pendiente'];
 
                     $cobro = Cobro::create([
-                        'fecha_cobro' => $data['fecha_pago'],
+                        'fecha_cobro' => $fechaPago,
                         'monto_pagado' => $montoPendiente,
                         'monto_pendiente' => 0,
                         'estado' => 'completado',
                         'comprobante' => $data['comprobante'] ?: $this->buildComprobante($factura),
                         'id_factura' => $factura->id_factura,
-                        'id_metodo_pago' => $data['id_metodo_pago'],
+                        'id_metodo_pago' => $metodoPago->id_metodo_pago,
                         'id_empleado' => $empleado->id_empleado,
                     ]);
 
                     $factura->update([
                         'estado' => 'pagada',
-                        'fecha_pago' => $data['fecha_pago'],
+                        'fecha_pago' => $fechaPago,
                     ]);
 
                     HistorialPago::create([
@@ -174,8 +273,15 @@ class CobroController extends Controller
                     $cobros->push($cobro);
                 }
 
-                return $cobros;
+                return [
+                    'cobros' => $cobros,
+                    'metodo_pago' => $metodoPago,
+                    'total_seleccionado' => $totalSeleccionado,
+                    'cantidad_pagada' => $cantidadPagada,
+                ];
             });
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (\Throwable $exception) {
             report($exception);
 
@@ -183,10 +289,33 @@ class CobroController extends Controller
         }
 
         Cache::forget('facturas.totales');
+        Cache::forget('facturas.billing_candidates');
+        Cache::increment('facturas:index:version');
+        Cache::forget('tecnico:billing-signals');
+        Cache::forget('tecnico:corte:open-socios');
+        Cache::forget('tecnico:reconexion:open-socios');
+        Cache::forget('tecnico:reconexion:latest-cuts');
+        Cache::forget('api.dashboard.tecnico');
+        Cache::add('cobros.index.version', 1, now()->addYears(2));
+        Cache::increment('cobros.index.version');
+        Cache::add('reportes:index:version', 1, now()->addYears(2));
+        Cache::increment('reportes:index:version');
+        OperationalCache::bump();
 
         return redirect()
-            ->route('secretaria.cobros.show', $socio)
-            ->with('success', 'Pago registrado correctamente. Se guardaron ' . $resultado->count() . ' cobro(s) en facturacion.');
+            ->route('secretaria.cobros.result')
+            ->with('payment_result', [
+                'socio_id' => $socio->id_socio,
+                'socio_nombre' => $socio->persona?->nombre_completo ?? 'Socio',
+                'factura_ids' => $resultado['cobros']->pluck('id_factura')->values()->all(),
+                'cobro_ids' => $resultado['cobros']->pluck('id_cobro')->values()->all(),
+                'total_pagado' => (float) $resultado['total_seleccionado'],
+                'cantidad_pagada' => (float) $resultado['cantidad_pagada'],
+                'cambio' => max(0, round((float) $resultado['cantidad_pagada'] - (float) $resultado['total_seleccionado'], 2)),
+                'metodo_pago' => $resultado['metodo_pago']->nombre,
+                'fecha_pago' => $fechaPago,
+            ])
+            ->with('success', 'Pago registrado correctamente. Ya puedes imprimir o descargar el recibo sin volver a facturacion.');
     }
 
     private function mapSocioCobroData(Socio $socio): array
@@ -248,9 +377,9 @@ class CobroController extends Controller
 
     private function pendingAmount(Factura $factura): float
     {
-        $pagado = (float) $factura->cobros()
-            ->where('estado', '!=', 'anulado')
-            ->sum('monto_pagado');
+        $pagado = (float) ($factura->relationLoaded('cobros')
+            ? $factura->cobros->where('estado', '!=', 'anulado')->sum('monto_pagado')
+            : $factura->cobros()->where('estado', '!=', 'anulado')->sum('monto_pagado'));
 
         return round(max(0, (float) $factura->total - $pagado), 2);
     }

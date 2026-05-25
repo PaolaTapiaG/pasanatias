@@ -1,233 +1,381 @@
 @extends('layouts.app')
 
-@section('title', 'Panel Técnico - EPSAS')
+@section('title', 'Panel Tecnico - EPSAS')
 
 @section('content')
-<div class="flex h-screen bg-gray-50">
-    <!-- Sidebar Tecnico -->
+@php
+    $profilePhoto = ($sharedAuthUser ?? auth()->user()?->loadMissing('persona'))?->persona?->foto_url;
+    $cards = [
+        ['title' => 'Lecturacion', 'description' => 'Registra consumos por usuario, controla lecturas pendientes y filtra inconsistencias.', 'route' => route('tecnico.lecturas.index'), 'cta' => 'Abrir lecturas'],
+        ['title' => 'Servicio y cortes', 'description' => 'Administra suspensiones por mora, reconexiones y autorizaciones de restablecimiento.', 'route' => route('tecnico.cortes.index'), 'cta' => 'Ver servicio'],
+        ['title' => 'Campo e instalaciones', 'description' => 'Planifica instalaciones nuevas, cambios de medidor y mantenimiento de red.', 'route' => route('tecnico.instalaciones.index'), 'cta' => 'Ir a campo'],
+        ['title' => 'Anomalias', 'description' => 'Centraliza medidores dañados, manipulaciones, fugas y observaciones técnicas.', 'route' => route('tecnico.anomalias.index'), 'cta' => 'Registrar anomalia'],
+        ['title' => 'Operacion del agua', 'description' => 'Haz seguimiento a bombas, distribución por zonas y horarios operativos.', 'route' => route('tecnico.operacion.index'), 'cta' => 'Monitorear red'],
+        ['title' => 'Incidencias y reportes', 'description' => 'Documenta emergencias, baja presión y problemas en bombas con evidencia.', 'route' => route('tecnico.incidencias.index'), 'cta' => 'Abrir incidencias'],
+    ];
+@endphp
+<div class="page-background min-h-screen">
     @include('slideboard.sidebartec')
 
-    <!-- Main Content -->
-    <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
-        <!-- Top Navbar -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="flex items-center justify-between h-16 px-6">
-                <h1 class="text-2xl font-bold text-gray-900">Panel Técnico</h1>
-                <div class="flex items-center space-x-4">
-                    <button class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="absolute top-1 right-1 block w-2 h-2 bg-blue-500 rounded-full"></span>
-                    </button>
-                    <div class="w-1 h-8 bg-gray-200"></div>
-                    <div class="flex items-center">
-                        <img class="w-10 h-10 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=3B82F6&color=fff" alt="Avatar">
-                        <span class="ml-3 text-sm font-medium text-gray-700">{{ Auth::user()->name }}</span>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <div data-tech-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
+        <!-- Header integrado con notificaciones y modo oscuro -->
+        @include('partials.header-with-notifications', [
+            'headerRole' => 'Tecnico',
+            'headerTitle' => 'Centro operativo',
+            'companyName' => 'Gestiona lecturas, incidencias, cortes y reconexiones',
+            'userName' => Auth::user()->name ?? '',
+            'userEmail' => Auth::user()->email ?? '',
+            'profilePhoto' => $profilePhoto,
+        ])
 
-        <!-- Page Content -->
-        <main class="flex-1 overflow-y-auto p-6">
-            @if (session('success'))
-                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg flex items-start">
-                    <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    <div>
-                        <p class="font-medium">¡Éxito!</p>
-                        <p class="text-sm">{{ session('success') }}</p>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Welcome Section -->
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-gray-900">¡Bienvenido, {{ Auth::user()->name }}!</h2>
-                <p class="text-gray-600 mt-2">Panel de operaciones técnicas y registro de lecturas</p>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Medidores Asignados -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm font-medium">Medidores Asignados</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">{{ \App\Models\Medidor::count() }}</p>
-                            <p class="text-xs text-gray-500 mt-2">Equipos bajo tu responsabilidad</p>
+        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div class="sm:hidden">
+                <section class="grid gap-4">
+                    <article class="rounded-[1.8rem] bg-[linear-gradient(135deg,#f97316_0%,#fb923c_55%,#fed7aa_100%)] px-5 py-5 text-white shadow-[0_22px_44px_rgba(249,115,22,0.22)]">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-sm text-orange-50/90">Resumen operativo</p>
+                                <p class="mt-3 text-4xl font-bold">{{ \Illuminate\Support\Facades\Cache::remember('dashboard:tecnico:medidores-total', now()->addMinutes(10), fn () => \App\Models\Medidor::count()) }}</p>
+                                <p class="mt-2 text-sm text-orange-50/90">medidores registrados</p>
+                            </div>
+                            <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.75 18.25h12.5V9.5a6.25 6.25 0 10-12.5 0v8.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 12l2.5-2.5" />
+                                </svg>
+                            </span>
                         </div>
-                        <div class="text-4xl text-blue-100">📏</div>
-                    </div>
-                </div>
+                    </article>
 
-                <!-- Lecturas Este Mes -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-cyan-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
+                    <div class="grid grid-cols-2 gap-3">
+                        <article class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <p class="text-sm text-slate-500">Lecturas</p>
+                            <p class="mt-3 text-3xl font-bold text-slate-950" data-tecnico-metric="lecturas_cargadas">--</p>
+                        </article>
+                        <article class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <p class="text-sm text-slate-500">Pendientes</p>
+                            <p class="mt-3 text-3xl font-bold text-slate-950" data-tecnico-metric="pendientes_tecnicos">--</p>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="mt-5 mobile-finance-card rounded-[1.7rem] p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium">Lecturas Registradas</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">--</p>
-                            <p class="text-xs text-gray-500 mt-2">Este mes</p>
+                            <p class="text-sm font-semibold text-slate-950">Proximas lecturaciones</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $readingCalendar['month_label'] }}</p>
                         </div>
-                        <div class="text-4xl text-cyan-100">📖</div>
+                        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">{{ $upcomingReadings->count() }} programadas</span>
                     </div>
-                </div>
 
-                <!-- Lecturas Pendientes -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm font-medium">Lecturas Pendientes</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">--</p>
-                            <p class="text-xs text-gray-500 mt-2">Por registrar</p>
+                    <div class="mt-4 rounded-[1.45rem] border border-orange-100 bg-white p-4 shadow-[0_18px_36px_rgba(249,115,22,0.10)]">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.18em] text-orange-500">Calendario</p>
+                                <p class="mt-1 text-lg font-semibold text-slate-950">{{ $readingCalendar['month_label'] }}</p>
+                            </div>
+                            <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 2.75v2.5M16 2.75v2.5M4.75 9.25h14.5M6.75 5.25h10.5A2.25 2.25 0 0119.5 7.5v10.75a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 18.25V7.5a2.25 2.25 0 012.25-2.25z" />
+                                </svg>
+                            </span>
                         </div>
-                        <div class="text-4xl text-yellow-100">⏰</div>
-                    </div>
-                </div>
 
-                <!-- Mantenimiento Programado -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm font-medium">Mantenimientos</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">--</p>
-                            <p class="text-xs text-gray-500 mt-2">Próximos trabajos</p>
+                        <div class="mt-4 text-center" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0.35rem;">
+                            @foreach ($readingCalendar['weekdays'] as $weekday)
+                                <span class="text-[0.68rem] font-semibold uppercase {{ $weekday === 'D' ? 'text-orange-500' : 'text-slate-400' }}">{{ $weekday }}</span>
+                            @endforeach
                         </div>
-                        <div class="text-4xl text-purple-100">🔧</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Management Panels -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Medidores Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">📏 Gestión de Medidores</h3>
-                    </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Ver medidores asignados
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Información técnica
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Estado de instalación
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Historial técnico
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition">
-                            Ir a Medidores
-                        </button>
-                    </div>
-                </div>
+                        <div class="mt-3 space-y-1.5">
+                            @foreach ($readingCalendar['weeks'] as $week)
+                                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0.35rem;">
+                                    @foreach ($week as $day)
+                                        <div class="
+                                            {{ !$day['in_month'] ? 'bg-slate-50 text-slate-300' : '' }}
+                                            {{ $day['date']->isSunday() && $day['in_month'] && !$day['is_busy'] ? 'border border-dashed border-orange-200 bg-orange-50 text-orange-500' : '' }}
+                                            {{ $day['is_busy'] ? 'bg-orange-500 text-white shadow-sm' : '' }}
+                                            {{ $day['is_today'] ? 'ring-2 ring-orange-300' : '' }}
+                                            {{ $day['in_month'] && !$day['is_busy'] && !$day['date']->isSunday() ? 'bg-slate-100 text-slate-700' : '' }}
+                                            flex h-10 w-full items-center justify-center rounded-2xl text-xs font-semibold
+                                        ">
+                                            {{ $day['day'] }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endforeach
+                        </div>
 
-                <!-- Lecturas Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">📖 Registro de Lecturas</h3>
+                        <div class="mt-4 flex flex-wrap gap-2 text-[0.68rem] font-medium">
+                            <span class="rounded-full bg-orange-500 px-2.5 py-1 text-white">Lectura programada</span>
+                            <span class="rounded-full border border-dashed border-orange-200 bg-orange-50 px-2.5 py-1 text-orange-600">Domingo libre</span>
+                        </div>
                     </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-cyan-500 mr-3">✓</span>
-                                Registrar nuevas lecturas
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-cyan-500 mr-3">✓</span>
-                                Validar lecturas
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-cyan-500 mr-3">✓</span>
-                                Historial de consumo
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-cyan-500 mr-3">✓</span>
-                                Detectar anomalías
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-2 rounded-lg transition">
-                            Ir a Lecturas
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Mantenimiento Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">🔧 Mantenimiento</h3>
+                    <div class="mt-4 space-y-3">
+                        @forelse ($upcomingReadings->take(3) as $reading)
+                            <article class="rounded-[1.35rem] border border-slate-100 bg-slate-50 px-4 py-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-950">{{ $reading->socio }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">{{ $reading->numero_serie }} · {{ $reading->codigo }}</p>
+                                    </div>
+                                    <div class="rounded-2xl bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+                                        {{ $reading->due_day }}/{{ $reading->due_date->format('m') }}
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="rounded-[1.35rem] border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+                                No hay lecturaciones proximas registradas.
+                            </div>
+                        @endforelse
                     </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Programar mantenimiento
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Registrar intervenciones
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Reporte de reparaciones
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Plan de preventivo
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 rounded-lg transition">
-                            Ir a Mantenimiento
-                        </button>
-                    </div>
-                </div>
+                </section>
 
-                <!-- Reportes Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">📊 Reportes Técnicos</h3>
+                <section class="mt-5">
+                    <div class="mb-3 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-slate-950">Acciones rapidas</h2>
+                        <span class="text-sm font-medium text-orange-500">Hoy</span>
                     </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-purple-500 mr-3">✓</span>
-                                Análisis de consumo
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-purple-500 mr-3">✓</span>
-                                Rendimiento de medidores
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-purple-500 mr-3">✓</span>
-                                Estadísticas mensuales
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-purple-500 mr-3">✓</span>
-                                Exportar datos
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg transition">
-                            Ver Reportes
-                        </button>
+                    <div class="grid grid-cols-2 gap-4">
+                        <a href="{{ route('tecnico.consumo.index') }}" class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3.75h5.38l3.12 3.12v9.38A1.75 1.75 0 0115 18H8.25A1.75 1.75 0 016.5 16.25V5.5A1.75 1.75 0 018.25 3.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 3.75v3.75h3.75M9 10.5h4.5M9 13.5h4.5" />
+                                </svg>
+                            </div>
+                            <p class="mt-4 text-base font-semibold text-slate-950">Registrar consumo</p>
+                            <p class="mt-1 text-sm text-slate-500">Captura consumo en campo</p>
+                        </a>
+                        <a href="{{ route('tecnico.anomalias.index') }}" class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.75l7 12.5H5l7-12.5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 9.25v3.5M12 15.5h.01" />
+                                </svg>
+                            </div>
+                            <p class="mt-4 text-base font-semibold text-slate-950">Anomalias</p>
+                            <p class="mt-1 text-sm text-slate-500">Reporta alertas tecnicas</p>
+                        </a>
+                        <a href="{{ route('tecnico.cortes.index') }}" class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5l14 14" /><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.5V7A2.25 2.25 0 0015 4.75H9A2.25 2.25 0 006.75 7v10A2.25 2.25 0 009 19.25h6A2.25 2.25 0 0017.25 17v-2.5" />
+                                </svg>
+                            </div>
+                            <p class="mt-4 text-base font-semibold text-slate-950">Cortes</p>
+                            <p class="mt-1 text-sm text-slate-500">Programa servicio</p>
+                        </a>
+                        <a href="{{ route('tecnico.incidencias.index') }}" class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h10.5v10.5H6.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9.25 9.25h5.5M9.25 12h5.5M9.25 14.75h3.5" />
+                                </svg>
+                            </div>
+                            <p class="mt-4 text-base font-semibold text-slate-950">Alertas</p>
+                            <p class="mt-1 text-sm text-slate-500">Incidencias de red</p>
+                        </a>
                     </div>
-                </div>
+                </section>
+
+                <section class="mt-5">
+                    <div class="mb-3 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-slate-950">Estado reciente</h2>
+                        <span class="text-sm font-medium text-orange-500">Monitoreo</span>
+                    </div>
+                    <div class="grid gap-4">
+                        <article class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-base font-semibold text-slate-950">Medidores activos</p>
+                                    <p class="mt-1 text-sm text-slate-500">Equipos listos para lectura</p>
+                                </div>
+                                <p class="text-2xl font-bold text-orange-500" data-tecnico-metric="medidores_activos">--</p>
+                            </div>
+                        </article>
+                        <article class="mobile-finance-card rounded-[1.6rem] p-4 shadow-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-base font-semibold text-slate-950">Plan del dia</p>
+                                    <p class="mt-1 text-sm text-slate-500">Lecturas, incidencias y servicio</p>
+                                </div>
+                                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">Listo</span>
+                            </div>
+                        </article>
+                    </div>
+                </section>
             </div>
 
-            <!-- Footer -->
-            <div class="mt-12 text-center text-gray-500 text-sm border-t border-gray-200 pt-6">
-                <p>© 2026 EPSAS - Sistema de Gestión de Agua. Todos los derechos reservados.</p>
+            <div class="hidden sm:block">
+            <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                <div class="overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#1f2937_0%,#f97316_48%,#c2410c_100%)] px-6 py-8 text-white shadow-[0_24px_50px_rgba(194,65,12,0.24)] sm:px-8">
+                    <p class="text-sm font-medium uppercase tracking-[0.24em] text-orange-100/80">EPSAS</p>
+                    <h2 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Bienvenido, {{ Auth::user()->name }}</h2>
+                    <p class="mt-4 max-w-2xl text-sm leading-7 text-orange-50/90 sm:text-base">
+                        Prioriza lecturacion, atiende emergencias y mantén trazabilidad de cada intervención técnica con una interfaz preparada para trabajo de campo.
+                    </p>
+                </div>
+
+                <div class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <h3 class="theme-text text-lg font-semibold text-slate-900 dark:text-slate-100">Acciones rapidas</h3>
+                    <div class="mt-5 grid gap-3">
+                        <a href="{{ route('tecnico.consumo.index') }}" class="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-200 dark:hover:bg-orange-500/20">
+                            Registrar consumo
+                        </a>
+                        <a href="{{ route('tecnico.configuracion.index') }}" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
+                            Editar perfil
+                        </a>
+                        <a href="{{ route('tecnico.anomalias.index') }}" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20">
+                            Reportar anomalia
+                        </a>
+                        <a href="{{ route('tecnico.incidencias.index') }}" class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/20">
+                            Gestionar incidencias
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <p class="theme-muted text-sm text-slate-500 dark:text-slate-400">Medidores registrados</p>
+                    <p class="mt-3 text-3xl font-bold text-slate-900 dark:text-slate-100" data-tecnico-metric="medidores_registrados">--</p>
+                </article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <p class="theme-muted text-sm text-slate-500 dark:text-slate-400">Activos</p>
+                    <p class="mt-3 text-3xl font-bold text-emerald-600 dark:text-emerald-300" data-tecnico-metric="medidores_activos">--</p>
+                </article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <p class="theme-muted text-sm text-slate-500 dark:text-slate-400">Lecturas cargadas</p>
+                    <p class="mt-3 text-3xl font-bold text-orange-600 dark:text-orange-300" data-tecnico-metric="lecturas_cargadas">--</p>
+                </article>
+                <article class="theme-card rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <p class="theme-muted text-sm text-slate-500 dark:text-slate-400">Pendientes tecnicos</p>
+                    <p class="mt-3 text-3xl font-bold text-rose-600 dark:text-rose-300" data-tecnico-metric="pendientes_tecnicos">--</p>
+                </article>
+            </section>
+
+            <section class="mt-8 grid gap-6 xl:grid-cols-[1fr_0.95fr]">
+                <article class="overflow-hidden rounded-[2rem] border border-orange-100 bg-white p-6 shadow-[0_24px_46px_rgba(249,115,22,0.10)]">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium uppercase tracking-[0.22em] text-orange-500">Calendario tecnico</p>
+                            <h3 class="mt-3 text-2xl font-bold text-slate-950">{{ $readingCalendar['month_label'] }}</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Visualiza las proximas lecturas sugeridas a partir de la ultima visita registrada por medidor.</p>
+                        </div>
+                        <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 2.75v2.5M16 2.75v2.5M4.75 9.25h14.5M6.75 5.25h10.5A2.25 2.25 0 0119.5 7.5v10.75a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 18.25V7.5a2.25 2.25 0 012.25-2.25z" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <div class="mt-6 text-center" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0.5rem;">
+                        @foreach ($readingCalendar['weekdays'] as $weekday)
+                            <span class="text-xs font-semibold uppercase {{ $weekday === 'D' ? 'text-orange-500' : 'text-slate-400' }}">{{ $weekday }}</span>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-3 space-y-2">
+                        @foreach ($readingCalendar['weeks'] as $week)
+                            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0.5rem;">
+                                @foreach ($week as $day)
+                                    <div class="
+                                        {{ !$day['in_month'] ? 'bg-slate-50 text-slate-300' : '' }}
+                                        {{ $day['date']->isSunday() && $day['in_month'] && !$day['is_busy'] ? 'border border-dashed border-orange-200 bg-orange-50 text-orange-500' : '' }}
+                                        {{ $day['is_busy'] ? 'bg-orange-500 text-white shadow-sm' : '' }}
+                                        {{ $day['is_today'] ? 'ring-2 ring-orange-300' : '' }}
+                                        {{ $day['in_month'] && !$day['is_busy'] && !$day['date']->isSunday() ? 'bg-slate-100 text-slate-700' : '' }}
+                                        flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold
+                                    ">
+                                        {{ $day['day'] }}
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-2 text-xs font-medium">
+                        <span class="rounded-full bg-orange-500 px-3 py-1 text-white">Lectura programada</span>
+                        <span class="rounded-full border border-dashed border-orange-200 bg-orange-50 px-3 py-1 text-orange-600">Domingo libre</span>
+                    </div>
+                </article>
+
+                <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 class="theme-text text-xl font-semibold text-slate-900 dark:text-slate-100">Siguiente ronda de lecturas</h3>
+                            <p class="theme-muted mt-2 text-sm text-slate-500 dark:text-slate-400">Recordatorios sugeridos por medidor activo.</p>
+                        </div>
+                        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-200">
+                            {{ $upcomingReadings->count() }} pendientes
+                        </span>
+                    </div>
+
+                    <div class="mt-5 space-y-3">
+                        @forelse ($upcomingReadings as $reading)
+                            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $reading->socio }}</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $reading->numero_serie }} · {{ $reading->codigo }}</p>
+                                    </div>
+                                    <span class="rounded-2xl {{ $reading->is_overdue ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200' }} px-3 py-1 text-xs font-semibold">
+                                        {{ $reading->due_date->format('d/m') }}
+                                    </span>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                    <span>Ultima lectura: {{ $reading->last_reading_date ?? 'Sin historial' }}</span>
+                                    <span>{{ $reading->is_overdue ? 'Vencida' : ($reading->days_left <= 0 ? 'Hoy' : 'En ' . $reading->days_left . ' dias') }}</span>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="rounded-[1.5rem] border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                Aun no hay lecturaciones proximas para mostrar.
+                            </div>
+                        @endforelse
+                    </div>
+                </article>
+            </section>
+
+            <section class="mt-8 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                @foreach ($cards as $card)
+                    <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950/70">
+                        <h3 class="theme-text text-xl font-semibold text-slate-900 dark:text-slate-100">{{ $card['title'] }}</h3>
+                        <p class="theme-muted mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">{{ $card['description'] }}</p>
+                        <a href="{{ $card['route'] }}" class="mt-6 inline-flex items-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-orange-500 dark:text-white dark:hover:bg-orange-600">
+                            {{ $card['cta'] }}
+                        </a>
+                    </article>
+                @endforeach
+            </section>
             </div>
         </main>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (() => {
+        const endpoint = @json(route('api.dashboard.tecnico-metrics'));
+
+        fetch(endpoint, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        })
+            .then((response) => response.ok ? response.json() : Promise.reject(response))
+            .then((data) => {
+                ['medidores_registrados', 'medidores_activos', 'lecturas_cargadas', 'pendientes_tecnicos']
+                    .forEach((key) => {
+                        const node = document.querySelector(`[data-tecnico-metric="${key}"]`);
+                        if (node) {
+                            node.textContent = data[key] ?? '--';
+                        }
+                    });
+            })
+            .catch(() => {});
+    })();
+</script>
+@endpush

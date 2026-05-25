@@ -6,6 +6,7 @@ use App\Models\Medidor;
 use App\Models\Persona;
 use App\Models\Sector;
 use App\Models\Socio;
+use App\Support\OperationalCache;
 use App\Models\Tarifa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,22 @@ use Illuminate\Validation\Rule;
 class SocioController extends Controller
 {
     public function index(Request $request)
+    {
+        return view('socios.index', [
+            'socios' => $this->socioPaginator($request),
+            'sectores' => $this->sectorFilterOptions(),
+        ]);
+    }
+
+    public function warmIndexCache(): void
+    {
+        $request = Request::create('/admin/socios', 'GET');
+
+        $this->socioPaginator($request, url('/admin/socios'));
+        $this->sectorFilterOptions();
+    }
+
+    private function socioPaginator(Request $request, ?string $path = null)
     {
         $hasOcultoColumn = Cache::remember('schema.socios.oculto', now()->addHours(12), function () {
             return Schema::hasColumn('socios', 'oculto');
@@ -73,14 +90,22 @@ class SocioController extends Controller
             $query->where('s.oculto', $request->visibilidad === 'ocultos');
         }
 
-        return view('socios.index', [
-            'socios' => $query->simplePaginate(12)->withQueryString(),
-            'sectores' => Cache::remember('socios.sectores', now()->addMinutes(10), function () {
-                return Sector::select('id_sector', 'nombre')
-                    ->orderBy('nombre')
-                    ->get();
-            }),
-        ]);
+        Cache::add('socios:index:version', 1, now()->addYears(2));
+        $cacheKey = 'socios:index:v' . Cache::get('socios:index:version', 1) . ':' . md5(json_encode($request->query()));
+
+        return Cache::remember($cacheKey, now()->addDays(7), fn () => $query
+            ->simplePaginate(12)
+            ->withPath($path ?? url('/admin/socios'))
+            ->appends($request->query()));
+    }
+
+    private function sectorFilterOptions()
+    {
+        return Cache::remember('socios.sectores', now()->addDays(7), function () {
+            return Sector::select('id_sector', 'nombre')
+                ->orderBy('nombre')
+                ->get();
+        });
     }
 
     public function create()
@@ -120,6 +145,7 @@ class SocioController extends Controller
             'estado' => 'activo',
             'id_socio' => $socio->id_socio,
         ]);
+        $this->flushOperationalCaches();
 
         return redirect()
             ->route('admin.socios.index')
@@ -179,6 +205,7 @@ class SocioController extends Controller
                 'id_socio' => $socio->id_socio,
             ]);
         }
+        $this->flushOperationalCaches();
 
         return redirect()
             ->route('admin.socios.index')
@@ -198,6 +225,7 @@ class SocioController extends Controller
             'oculto_por' => Auth::id(),
             'estado' => 'inactivo',
         ]);
+        $this->flushOperationalCaches();
 
         return redirect()
             ->route('admin.socios.index')
@@ -213,6 +241,7 @@ class SocioController extends Controller
             'oculto_por' => null,
             'estado' => 'activo',
         ]);
+        $this->flushOperationalCaches();
 
         return redirect()
             ->route('admin.socios.index')
@@ -224,6 +253,7 @@ class SocioController extends Controller
         $socio->update([
             'estado' => 'activo',
         ]);
+        $this->flushOperationalCaches();
 
         return redirect()
             ->route('admin.socios.index', request()->query())
@@ -235,6 +265,7 @@ class SocioController extends Controller
         $socio->update([
             'estado' => 'inactivo',
         ]);
+        $this->flushOperationalCaches();
 
         return redirect()
             ->route('admin.socios.index', request()->query())
@@ -277,5 +308,27 @@ class SocioController extends Controller
         $next = ((int) Socio::max('id_socio')) + 1;
 
         return 'SOC-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function flushOperationalCaches(): void
+    {
+        Cache::forget('tecnico:socios:catalogo');
+        Cache::forget('tecnico:socios:catalogo:v2');
+        Cache::forget('tecnico:consumo:catalogo:v3');
+        Cache::forget('tecnico:billing-signals');
+        Cache::forget('tecnico:corte:open-socios');
+        Cache::forget('tecnico:reconexion:open-socios');
+        Cache::forget('tecnico:reconexion:latest-cuts');
+        Cache::forget('api.dashboard.tecnico');
+        Cache::add('socios:index:version', 1, now()->addYears(2));
+        Cache::increment('socios:index:version');
+        Cache::add('tarifas:index:version', 1, now()->addYears(2));
+        Cache::increment('tarifas:index:version');
+        Cache::forget('medidores:stats');
+        Cache::add('medidores:index:version', 1, now()->addYears(2));
+        Cache::increment('medidores:index:version');
+        Cache::add('reportes:index:version', 1, now()->addYears(2));
+        Cache::increment('reportes:index:version');
+        OperationalCache::bump();
     }
 }

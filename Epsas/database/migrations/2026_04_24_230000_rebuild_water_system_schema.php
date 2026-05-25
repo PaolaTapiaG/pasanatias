@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -9,14 +11,20 @@ return new class extends Migration
 
     public function up(): void
     {
-        DB::unprepared(file_get_contents(database_path('sql/schema.sql')));
-        DB::unprepared(file_get_contents(database_path('sql/triggers.sql')));
-        DB::unprepared(file_get_contents(database_path('sql/rls.sql')));
+        // PostgreSQL: Load advanced schema
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::unprepared(file_get_contents(database_path('sql/schema.sql')));
+            DB::unprepared(file_get_contents(database_path('sql/triggers.sql')));
+            DB::unprepared(file_get_contents(database_path('sql/rls.sql')));
+        }
+        // SQLite: Tables are already created by 2026_04_24_190000 migration
     }
 
     public function down(): void
     {
-        DB::unprepared(<<<'SQL'
+        // PostgreSQL cleanup
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::unprepared(<<<'SQL'
 DROP VIEW IF EXISTS v_cobros_periodo_actual;
 DROP VIEW IF EXISTS v_saldo_socios;
 DROP VIEW IF EXISTS v_empleados;
@@ -57,5 +65,17 @@ DROP TABLE IF EXISTS sectores CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 DROP TABLE IF EXISTS personas CASCADE;
 SQL);
+        } else {
+            // SQLite cleanup
+            Schema::dropIfExists('auditoria');
+            Schema::dropIfExists('notificaciones');
+            Schema::dropIfExists('historial_pagos');
+            Schema::dropIfExists('cobros');
+            Schema::dropIfExists('facturas');
+            Schema::dropIfExists('lecturas');
+            Schema::dropIfExists('periodos_facturacion');
+            Schema::dropIfExists('medidores');
+            Schema::dropIfExists('metodos_pago');
+        }
     }
 };

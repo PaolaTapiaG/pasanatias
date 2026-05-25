@@ -4,13 +4,9 @@
 
 @section('content')
 @php
-    $dashboardStats = \Illuminate\Support\Facades\Cache::remember('dashboard.admin.stats', now()->addMinutes(10), function () {
-        return [
-            'users' => \App\Models\User::count(),
-            'roles' => \App\Models\Role::count(),
-            'permissions' => \App\Models\Permission::count(),
-        ];
-    });
+    $companySettings = $sharedCompanySettings ?? [];
+    $profilePhoto = ($sharedAuthUser?->persona?->foto_url) ?? ($user?->persona?->foto_url);
+    $dashboardStats = $dashboardStats ?? ['users' => 0, 'roles' => 0, 'permissions' => 0];
 
     $stats = [
         [
@@ -71,41 +67,19 @@
     ];
 @endphp
 
-<div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.15),_transparent_20%),linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)]">
+<div class="page-background min-h-screen">
     @include('slideboard.sidebaradmin')
 
     <div data-admin-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
-        <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-                <div class="flex items-center gap-3">
-                    <button
-                        type="button"
-                        data-sidebar-toggle
-                        class="hidden h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 md:flex"
-                        aria-label="Expandir o contraer sidebar"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" data-sidebar-toggle-icon class="h-5 w-5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 6.75l4.5 5-4.5 5" />
-                        </svg>
-                    </button>
-
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-blue-700">Administrador</p>
-                        <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Panel de control</h1>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                    <div class="hidden text-right sm:block">
-                        <p class="text-sm font-semibold text-slate-900">{{ $user->name }}</p>
-                        <p class="text-xs text-slate-500">{{ $user->email }}</p>
-                    </div>
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-sm font-bold text-blue-700">
-                        {{ strtoupper(substr($user->name, 0, 1)) }}
-                    </div>
-                </div>
-            </div>
-        </header>
+        <!-- Header integrado con notificaciones y modo oscuro -->
+        @include('partials.header-with-notifications', [
+            'headerRole' => 'Administrador',
+            'headerTitle' => 'Panel de control',
+            'companyName' => $companySettings['company_name'] ?? 'EPSAS',
+            'userName' => $user->name ?? '',
+            'userEmail' => $user->email ?? '',
+            'profilePhoto' => $profilePhoto,
+        ])
 
         <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             @if (session('success'))
@@ -117,7 +91,7 @@
             <section class="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
                 <div class="overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#245fbe_0%,#1b50aa_58%,#183f8a_100%)] px-6 py-8 text-white shadow-[0_24px_50px_rgba(25,80,170,0.25)] sm:px-8">
                     <div class="max-w-3xl">
-                        <p class="text-sm font-medium uppercase tracking-[0.24em] text-blue-100/80">EPSAS</p>
+                        <p class="text-sm font-medium uppercase tracking-[0.24em] text-blue-100/80">{{ $companySettings['company_name'] ?? 'EPSAS' }}</p>
                         <h2 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
                             Bienvenido, {{ $user->name }}
                         </h2>
@@ -133,14 +107,11 @@
                         <a href="{{ route('admin.socios.index') }}" class="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
                             Gestionar socios
                         </a>
-                        <a href="{{ route('admin.usuarios.index') }}" class="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100">
-                            Gestionar usuarios
-                        </a>
-                        <a href="{{ route('admin.permisos.index') }}" class="rounded-2xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100">
-                            Configurar roles y permisos
-                        </a>
                         <a href="{{ route('admin.configuracion.index') }}" class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
                             Revisar configuracion
+                        </a>
+                        <a href="{{ route('admin.gastos.index') }}" class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">
+                            Registrar gastos
                         </a>
                     </div>
                 </div>
@@ -154,6 +125,73 @@
                         <p class="mt-2 text-sm text-slate-500">{{ $stat['detail'] }}</p>
                     </article>
                 @endforeach
+            </section>
+
+            <section class="mt-8 grid gap-6 xl:grid-cols-3">
+                <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">Aprobaciones</p>
+                            <h3 class="mt-1 text-xl font-semibold text-slate-900">Reconexiones pendientes</h3>
+                        </div>
+                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{{ $pendingReconnectionApprovals->count() }}</span>
+                    </div>
+                    <div class="mt-5 space-y-3">
+                        @forelse ($pendingReconnectionApprovals as $order)
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">{{ $order->socio?->codigo_display ?? 'Sin socio' }} · {{ $order->socio?->persona?->nombre_completo ?? 'Usuario' }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">{{ $order->zona ?: 'Sin zona' }} · {{ $order->referencia ?: 'Sin referencia' }}</p>
+                                    </div>
+                                    <form method="POST" action="{{ route('secretaria.reconexiones.approve', $order->id_orden) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Aprobar reconexion</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">No hay solicitudes de reconexion pendientes.</div>
+                        @endforelse
+                    </div>
+                </article>
+
+                <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-orange-600">Campo</p>
+                    <h3 class="mt-1 text-xl font-semibold text-slate-900">Instalaciones realizadas</h3>
+                    <div class="mt-5 space-y-3">
+                        @forelse ($completedInstallations as $order)
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <p class="text-sm font-semibold text-slate-900">{{ $order->socio?->persona?->nombre_completo ?? ($order->referencia ?: 'Instalacion') }}</p>
+                                <p class="mt-1 text-xs text-slate-500">{{ $order->zona ?: 'Sin zona' }} · {{ optional($order->fecha_ejecucion ?? $order->fecha_programada)->format('d/m/Y') }}</p>
+                            </div>
+                        @empty
+                            <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">Aun no hay instalaciones completadas.</div>
+                        @endforelse
+                    </div>
+                </article>
+            </section>
+
+            <section class="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600">Egresos</p>
+                        <h3 class="mt-1 text-xl font-semibold text-slate-900">Requerimientos y gastos recientes</h3>
+                    </div>
+                    <a href="{{ route('admin.gastos.index') }}" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">Ver egresos</a>
+                </div>
+                <div class="mt-5 grid gap-3 lg:grid-cols-3">
+                    @forelse ($recentOperationalExpenses as $expense)
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p class="text-sm font-semibold text-slate-900">{{ $expense->concepto }}</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $expense->categoria }} · {{ optional($expense->fecha_gasto)->format('d/m/Y') }}</p>
+                            <p class="mt-2 text-sm font-semibold text-amber-600">Bs {{ number_format((float) $expense->monto, 2) }}</p>
+                        </div>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 lg:col-span-3">No hay egresos recientes.</div>
+                    @endforelse
+                </div>
             </section>
 
             <section class="mt-8 grid gap-6 xl:grid-cols-2">

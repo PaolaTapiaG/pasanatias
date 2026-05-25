@@ -1,12 +1,25 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'EPSAS')</title>
+    @php
+        $themeDefault = ($sharedCompanySettings['theme_preference'] ?? null) ?: 'light';
+    @endphp
+    <script>
+        (() => {
+            const fallbackTheme = @json($themeDefault);
+            const savedTheme = localStorage.getItem('epsas-theme');
+            const theme = savedTheme || fallbackTheme;
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('head')
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen app-shell" data-theme-default="{{ $themeDefault }}">
     @yield('content')
+    @stack('scripts')
 </body>
 </html>

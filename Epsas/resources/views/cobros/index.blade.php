@@ -3,22 +3,15 @@
 @section('title', 'Buscar deudores - EPSAS')
 
 @section('content')
-<div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_18%),linear-gradient(180deg,_#f8fbff_0%,_#eef5ff_100%)]">
-    @include('slideboard.sidebaradmin')
+<div class="page-background min-h-screen bg-white">
+    @include('partials.role-sidebar')
 
     <div data-admin-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
-        <header class="border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700">Pagos</p>
-                    <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Socios deudores</h1>
-                    <p class="mt-2 text-sm text-slate-500">Selecciona un socio desde la tabla para abrir su ventana de pago.</p>
-                </div>
-                <a href="{{ route('secretaria.facturas.index') }}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                    Ver facturacion
-                </a>
-            </div>
-        </header>
+        @include('partials.header-with-notifications', [
+            'headerRole' => 'Secretaria',
+            'headerTitle' => 'Registrar pagos',
+            'companyName' => $sharedCompanySettings['company_name'] ?? 'EPSAS EL PORTILLO',
+        ])
 
         <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             @if (session('success'))
@@ -26,6 +19,19 @@
                     {{ session('success') }}
                 </div>
             @endif
+
+            <section class="mb-6 rounded-[2rem] border border-emerald-100 bg-white p-5 shadow-sm">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Pagos</p>
+                        <h2 class="mt-1 text-2xl font-black text-slate-950">Socios deudores</h2>
+                        <p class="mt-2 text-sm text-slate-500">Selecciona un socio desde la tabla para abrir su ventana de pago.</p>
+                    </div>
+                    <a href="{{ route('secretaria.facturas.index') }}" class="inline-flex w-full items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 sm:w-auto">
+                        Ver facturacion
+                    </a>
+                </div>
+            </section>
 
             <section class="grid gap-4 md:grid-cols-3">
                 <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -38,7 +44,7 @@
                 </article>
                 <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
                     <p class="text-sm text-slate-500">Monto total por recaudar</p>
-                    <p class="mt-3 text-3xl font-bold text-cyan-700">Bs {{ number_format((float) $resumen['monto_total_pendiente'], 2) }}</p>
+                    <p class="mt-3 text-3xl font-bold text-emerald-700">Bs {{ number_format((float) $resumen['monto_total_pendiente'], 2) }}</p>
                 </article>
             </section>
 
@@ -49,9 +55,9 @@
                         name="buscar"
                         value="{{ $search }}"
                         placeholder="Buscar por nombre, CI o numero de socio"
-                        class="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                        class="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                     >
-                    <button class="h-12 rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                    <button class="h-12 rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white transition hover:bg-emerald-700">
                         Buscar
                     </button>
                 </form>
@@ -83,7 +89,7 @@
                                     <td class="px-5 py-4 text-rose-600">Bs {{ number_format((float) $socio['recargos_pendientes'], 2) }}</td>
                                     <td class="px-5 py-4 font-semibold text-slate-900">Bs {{ number_format((float) $socio['total_pendiente'], 2) }}</td>
                                     <td class="px-5 py-4 text-right">
-                                        <a href="{{ route('secretaria.cobros.show', $socio['id_socio']) }}" class="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100">
+                                        <a href="{{ route('secretaria.cobros.show', $socio['id_socio']) }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
                                             Abrir pago
                                         </a>
                                     </td>

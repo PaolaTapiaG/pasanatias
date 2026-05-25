@@ -6,7 +6,7 @@
         @endif
 
         <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            El sistema creara automaticamente el usuario de acceso del empleado con este correo y enviara una contrasena temporal por SMS al telefono registrado.
+            El sistema creara automaticamente el usuario de acceso del empleado con este correo y enviara una contrasena temporal por SMS y correo a los datos registrados.
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
@@ -34,6 +34,11 @@
                 <label class="mb-2 block text-sm font-semibold text-slate-700">Correo</label>
                 <input name="email" type="email" value="{{ old('email', $empleado?->persona?->email) }}" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
                 @error('email') <p class="mt-2 text-xs text-rose-600">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Usuario de acceso</label>
+                <input name="username" value="{{ old('username', $empleado?->user?->username) }}" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
+                @error('username') <p class="mt-2 text-xs text-rose-600">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="mb-2 block text-sm font-semibold text-slate-700">Foto</label>

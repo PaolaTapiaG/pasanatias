@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-label="Trabajo tecnico de campo">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#d6e8ee"/>
+      <stop offset=".5" stop-color="#f6fbff"/>
+      <stop offset="1" stop-color="#97cadb"/>
+    </linearGradient>
+    <linearGradient id="pipe" x1="0" x2="1">
+      <stop offset="0" stop-color="#02457a"/>
+      <stop offset="1" stop-color="#018abe"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#001b48" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <rect width="900" height="620" rx="48" fill="url(#bg)"/>
+  <path d="M0 456c170-92 312 43 463-23 178-78 252-108 437-18v205H0z" fill="#018abe" opacity=".18"/>
+  <g filter="url(#shadow)">
+    <rect x="94" y="118" width="712" height="344" rx="42" fill="#fff"/>
+  </g>
+  <path d="M142 378h574c45 0 82-37 82-82s-37-82-82-82H562" fill="none" stroke="url(#pipe)" stroke-width="48" stroke-linecap="round"/>
+  <path d="M158 378h558" fill="none" stroke="#d6e8ee" stroke-width="16" stroke-linecap="round" opacity=".55"/>
+  <circle cx="282" cy="378" r="72" fill="#001b48"/>
+  <circle cx="282" cy="378" r="40" fill="#97cadb"/>
+  <circle cx="596" cy="214" r="72" fill="#02457a"/>
+  <circle cx="596" cy="214" r="40" fill="#97cadb"/>
+  <g fill="#018abe">
+    <rect x="182" y="165" width="150" height="28" rx="14"/>
+    <rect x="182" y="215" width="228" height="20" rx="10" opacity=".75"/>
+    <rect x="182" y="252" width="188" height="20" rx="10" opacity=".55"/>
+  </g>
+  <g fill="#001b48">
+    <circle cx="644" cy="362" r="28"/>
+    <rect x="619" y="390" width="50" height="72" rx="18"/>
+    <rect x="579" y="427" width="130" height="22" rx="11"/>
+  </g>
+  <text x="92" y="540" fill="#001b48" font-family="Manrope, Arial, sans-serif" font-size="32" font-weight="900">Lecturas, cortes y reconexiones</text>
+</svg>

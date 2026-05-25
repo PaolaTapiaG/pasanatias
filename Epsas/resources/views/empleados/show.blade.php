@@ -33,6 +33,10 @@
                 </div>
             @endif
 
+            <div class="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700 shadow-sm">
+                El empleado puede iniciar sesion con usuario <span class="font-semibold">{{ $empleado->user?->username ?: 'sin usuario' }}</span> o con correo <span class="font-semibold">{{ $empleado->user?->email ?: 'sin correo' }}</span>.
+            </div>
+
             <div class="grid gap-6 lg:grid-cols-2">
                 <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 class="text-xl font-semibold text-slate-900">Datos personales</h2>
@@ -56,7 +60,7 @@
                         <div><dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Correo</dt><dd class="mt-1 text-sm text-slate-800">{{ $empleado->persona?->email ?: 'Sin correo' }}</dd></div>
                         <div><dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Ingreso</dt><dd class="mt-1 text-sm text-slate-800">{{ optional($empleado->fecha_ingreso)->format('d/m/Y') }}</dd></div>
                         <div><dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Estado</dt><dd class="mt-1 text-sm text-slate-800">{{ ucfirst($empleado->estado) }}</dd></div>
-                        <div><dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Usuario de acceso</dt><dd class="mt-1 text-sm text-slate-800">{{ $empleado->user?->email ?: 'No creado' }}</dd></div>
+                        <div><dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Usuario de acceso</dt><dd class="mt-1 text-sm text-slate-800">{{ $empleado->user?->username ?: 'No creado' }}</dd></div>
                         <div><dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Cambio de contrasena</dt><dd class="mt-1 text-sm text-slate-800">{{ $empleado->user?->must_change_password ? 'Pendiente' : 'Actualizada' }}</dd></div>
                     </dl>
                 </section>

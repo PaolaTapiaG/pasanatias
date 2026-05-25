@@ -72,10 +72,123 @@ return new class extends Migration
                 $table->foreignId('id_socio')->nullable()->constrained('socios', 'id_socio')->nullOnDelete();
             });
         }
+
+        if (!Schema::hasTable('metodos_pago')) {
+            Schema::create('metodos_pago', function (Blueprint $table) {
+                $table->id('id_metodo_pago');
+                $table->string('nombre')->unique();
+                $table->text('descripcion')->nullable();
+                $table->boolean('requiere_referencia')->default(false);
+                $table->string('estado')->default('activo');
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('periodos_facturacion')) {
+            Schema::create('periodos_facturacion', function (Blueprint $table) {
+                $table->id('id_periodo');
+                $table->date('fecha_inicio');
+                $table->date('fecha_fin');
+                $table->string('descripcion')->nullable();
+                $table->string('estado')->default('activo');
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('lecturas')) {
+            Schema::create('lecturas', function (Blueprint $table) {
+                $table->id('id_lectura');
+                $table->unsignedBigInteger('id_medidor');
+                $table->decimal('lectura_actual', 10, 2);
+                $table->dateTime('fecha_lectura');
+                $table->text('observaciones')->nullable();
+                $table->timestamps();
+                $table->foreign('id_medidor')->references('id_medidor')->on('medidores')->onDelete('cascade');
+            });
+        }
+
+        if (!Schema::hasTable('facturas')) {
+            Schema::create('facturas', function (Blueprint $table) {
+                $table->id('id_factura');
+                $table->unsignedBigInteger('id_socio');
+                $table->unsignedBigInteger('id_periodo');
+                $table->unsignedBigInteger('id_tarifa');
+                $table->string('numero_factura')->unique();
+                $table->date('fecha_emision');
+                $table->decimal('consumo_m3', 10, 2)->default(0);
+                $table->decimal('monto_base', 12, 2)->default(0);
+                $table->decimal('monto_total', 12, 2)->default(0);
+                $table->string('estado')->default('pendiente');
+                $table->dateTime('fecha_vencimiento')->nullable();
+                $table->timestamps();
+                $table->foreign('id_socio')->references('id_socio')->on('socios')->onDelete('cascade');
+                $table->foreign('id_periodo')->references('id_periodo')->on('periodos_facturacion');
+                $table->foreign('id_tarifa')->references('id_tarifa')->on('tarifas');
+            });
+        }
+
+        if (!Schema::hasTable('cobros')) {
+            Schema::create('cobros', function (Blueprint $table) {
+                $table->id('id_cobro');
+                $table->unsignedBigInteger('id_factura');
+                $table->unsignedBigInteger('id_metodo_pago');
+                $table->decimal('monto_pagado', 12, 2);
+                $table->date('fecha_cobro');
+                $table->string('comprobante_referencia')->nullable();
+                $table->string('estado')->default('confirmado');
+                $table->timestamps();
+                $table->foreign('id_factura')->references('id_factura')->on('facturas')->onDelete('cascade');
+                $table->foreign('id_metodo_pago')->references('id_metodo_pago')->on('metodos_pago');
+            });
+        }
+
+        if (!Schema::hasTable('historial_pagos')) {
+            Schema::create('historial_pagos', function (Blueprint $table) {
+                $table->id('id_historial');
+                $table->unsignedBigInteger('id_factura');
+                $table->decimal('monto', 12, 2);
+                $table->string('tipo');
+                $table->text('descripcion')->nullable();
+                $table->timestamps();
+                $table->foreign('id_factura')->references('id_factura')->on('facturas')->onDelete('cascade');
+            });
+        }
+
+        if (!Schema::hasTable('notificaciones')) {
+            Schema::create('notificaciones', function (Blueprint $table) {
+                $table->id('id_notificacion');
+                $table->unsignedBigInteger('id_socio')->nullable();
+                $table->string('tipo');
+                $table->text('contenido');
+                $table->boolean('leida')->default(false);
+                $table->timestamps();
+                $table->foreign('id_socio')->references('id_socio')->on('socios')->onDelete('set null');
+            });
+        }
+
+        if (!Schema::hasTable('auditoria')) {
+            Schema::create('auditoria', function (Blueprint $table) {
+                $table->id('id_auditoria');
+                $table->string('tabla');
+                $table->string('accion');
+                $table->string('usuario')->nullable();
+                $table->json('datos_antes')->nullable();
+                $table->json('datos_despues')->nullable();
+                $table->timestamp('fecha_cambio')->useCurrent();
+            });
+        }
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('auditoria');
+        Schema::dropIfExists('notificaciones');
+        Schema::dropIfExists('historial_pagos');
+        Schema::dropIfExists('cobros');
+        Schema::dropIfExists('facturas');
+        Schema::dropIfExists('lecturas');
+        Schema::dropIfExists('periodos_facturacion');
+        Schema::dropIfExists('metodos_pago');
         Schema::dropIfExists('medidores');
         Schema::dropIfExists('socios');
         Schema::dropIfExists('tarifas');

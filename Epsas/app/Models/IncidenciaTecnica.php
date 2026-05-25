@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+class IncidenciaTecnica extends Model
+{
+    protected $table = 'incidencias_tecnicas';
+    protected $primaryKey = 'id_incidencia';
+
+    protected $fillable = [
+        'tipo',
+        'prioridad',
+        'estado',
+        'zona',
+        'fecha_reporte',
+        'descripcion',
+        'evidencia_path',
+        'coord_x',
+        'coord_y',
+        'id_socio',
+        'id_empleado',
+    ];
+
+    protected $casts = [
+        'fecha_reporte' => 'datetime',
+        'coord_x' => 'decimal:2',
+        'coord_y' => 'decimal:2',
+    ];
+
+    public function socio(): BelongsTo
+    {
+        return $this->belongsTo(Socio::class, 'id_socio', 'id_socio');
+    }
+
+    public function empleado(): BelongsTo
+    {
+        return $this->belongsTo(Empleado::class, 'id_empleado', 'id_empleado');
+    }
+
+    public function getEvidenciaUrlAttribute(): ?string
+    {
+        if (!$this->evidencia_path) {
+            return null;
+        }
+
+        if (Str::startsWith($this->evidencia_path, ['http://', 'https://'])) {
+            return $this->evidencia_path;
+        }
+
+        if (Str::startsWith($this->evidencia_path, 'storage/')) {
+            return asset($this->evidencia_path);
+        }
+
+        return Storage::disk('public')->url($this->evidencia_path);
+    }
+}

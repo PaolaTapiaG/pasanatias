@@ -1,13 +1,16 @@
 <?php
 
-namespace App\Services;
+namespace App\Http\Services;
 
+use App\Mail\InvoicePdfMail;
 use App\Models\Factura;
 use App\Models\Notificacion;
 use App\Models\Socio;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class NotificacionService
 {
@@ -320,8 +323,48 @@ class NotificacionService
     /** Integrar con Mailgun, SES, SMTP, etc. */
     private function enviarEmail(Notificacion $notificacion): void
     {
-        // TODO: Mail::to($notificacion->socio->persona->email)->send(new FacturaMailable($notificacion));
-        Log::info("[EMAIL] Para: {$notificacion->socio->persona->email} | {$notificacion->mensaje}");
+        try {
+            $notificacion->loadMissing(['socio.persona', 'factura']);
+            $email = $notificacion->socio?->persona?->email;
+
+            if (!$email) {
+                Log::warning("[EMAIL] No hay correo para notificación #{$notificacion->id_notificacion}");
+                return;
+            }
+
+            // Si la notificación es sobre una factura, adjuntar el PDF
+            if ($notificacion->factura && in_array($notificacion->tipo, ['factura_emitida', 'pago_recibido'])) {
+                $factura = $notificacion->factura->loadMissing([
+                    'socio.persona',
+                    'socio.sector',
+                    'socio.tarifa',
+                    'periodo',
+                    'lectura.medidor',
+                    'cobros.metodoPago',
+                    'cobros.empleado.persona',
+                ]);
+
+                // Generar PDF con datos básicos
+                $pdfContent = Pdf::loadView('facturas.pdf', [
+                    'factura' => $factura,
+                ])->output();
+
+                // Enviar con PDF adjunto
+                Mail::to($email)->send(new InvoicePdfMail($factura, $pdfContent));
+                Log::info("[EMAIL] Enviado a: {$email} | Tipo: {$notificacion->tipo} | Con PDF: {$factura->numero_factura}.pdf");
+            } else {
+                // Enviar email simple sin adjuntos
+                Mail::raw($notificacion->mensaje, function ($message) use ($email, $notificacion) {
+                    $message
+                        ->to($email)
+                        ->subject("Notificación de " . config('app.name'));
+                });
+                Log::info("[EMAIL] Enviado a: {$email} | Tipo: {$notificacion->tipo}");
+            }
+        } catch (\Exception $e) {
+            Log::error("[EMAIL] Error al enviar notificación #{$notificacion->id_notificacion}: {$e->getMessage()}");
+            throw $e;
+        }
     }
 
     /** Integrar con Twilio WhatsApp o Meta Cloud API. */

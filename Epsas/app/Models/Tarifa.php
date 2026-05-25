@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\WaterBillingService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -39,8 +40,12 @@ class Tarifa extends Model
      */
     public function calcularMonto(float $consumoM3): float
     {
-        $consumoFacturable = max($consumoM3, $this->consumo_minimo_m3);
-        return round($consumoFacturable * $this->precio_m3_base, 2);
+        return $this->calcularDesglose($consumoM3)['water_charge'];
+    }
+
+    public function calcularDesglose(float $consumoM3): array
+    {
+        return app(WaterBillingService::class)->breakdown($consumoM3);
     }
 
     // ── Relaciones ─────────────────────────────

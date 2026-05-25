@@ -12,21 +12,14 @@
 @endphp
 
 @section('content')
-<div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.15),_transparent_20%),linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)]">
-    @include('slideboard.sidebaradmin')
+<div class="page-background min-h-screen">
+    @include('partials.role-sidebar')
 
     <div data-admin-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
-        <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-blue-700">Socios</p>
-                    <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Gestion de socios</h1>
-                </div>
-                <a href="{{ route('admin.socios.create') }}" class="inline-flex items-center rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
-                    Registrar socio
-                </a>
-            </div>
-        </header>
+        @include('partials.header-with-notifications', [
+            'headerRole' => 'Socios',
+            'headerTitle' => 'Gestion de socios',
+        ])
 
         <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             @if (session('success'))
@@ -34,6 +27,20 @@
                     {{ session('success') }}
                 </div>
             @endif
+
+            <section class="mb-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Acciones de socios</p>
+                        <p class="mt-1 text-sm text-slate-500">Exporta el listado filtrado o registra un nuevo socio desde aqui.</p>
+                    </div>
+                    <div class="grid w-full gap-3 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
+                        <a href="{{ route('admin.socios.export', ['format' => 'excel'] + request()->query()) }}" class="inline-flex w-full items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 sm:w-auto">Exportar Excel</a>
+                        <a href="{{ route('admin.socios.export', ['format' => 'pdf'] + request()->query()) }}" class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto">Exportar PDF</a>
+                        <a href="{{ route('admin.socios.create') }}" class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto">Registrar socio</a>
+                    </div>
+                </div>
+            </section>
 
             <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                 <form id="socios-filter-form" method="GET" class="grid gap-4 lg:grid-cols-[1.5fr_0.75fr_0.75fr_0.75fr_auto]">

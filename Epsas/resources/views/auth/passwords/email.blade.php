@@ -10,7 +10,7 @@
                 <p class="text-sm font-medium uppercase tracking-[0.25em] text-blue-700">EPSAS</p>
                 <h1 class="mt-2 text-3xl font-semibold text-slate-900">Recuperar cuenta</h1>
                 <p class="mt-3 text-sm leading-6 text-slate-500">
-                    Ingresa el correo del empleado y enviaremos un codigo de recuperacion por SMS al telefono registrado.
+                    Ingresa el usuario o correo del empleado y enviaremos un codigo de recuperacion por SMS y correo a los datos registrados.
                 </p>
             </div>
 
@@ -23,18 +23,18 @@
             <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
                 @csrf
                 <div>
-                    <label for="recovery_email" class="mb-2 block text-sm font-semibold text-slate-700">
-                        Correo electronico
+                    <label for="recovery_login" class="mb-2 block text-sm font-semibold text-slate-700">
+                        Usuario o correo
                     </label>
                     <input
-                        id="recovery_email"
-                        name="email"
-                        type="email"
-                        value="{{ old('email') }}"
-                        placeholder="nombre@ejemplo.com"
+                        id="recovery_login"
+                        name="login"
+                        type="text"
+                        value="{{ old('login') }}"
+                        placeholder="usuario o nombre@ejemplo.com"
                         class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     >
-                    @error('email')
+                    @error('login')
                         <p class="mt-2 text-xs text-rose-600">{{ $message }}</p>
                     @enderror
                 </div>

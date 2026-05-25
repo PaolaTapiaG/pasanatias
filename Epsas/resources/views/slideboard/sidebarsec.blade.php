@@ -1,100 +1,134 @@
-<!-- Secretaria Sidebar -->
-<div class="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-gray-900 text-white">
-    <!-- Logo -->
-    <div class="flex items-center h-16 px-6 bg-gray-800 border-b border-gray-700">
-        <h1 class="text-2xl font-bold">EPSAS</h1>
-    </div>
+@php
+    $companySettings = $sharedCompanySettings ?? [];
+    $secUser = $sharedAuthUser ?? Auth::user();
 
-    <!-- User Info -->
-    <div class="px-6 py-4 border-b border-gray-700">
-        <p class="text-sm text-gray-300">Secretaria</p>
-        <p class="text-white font-semibold truncate">{{ Auth::user()->name }}</p>
-        <p class="text-xs text-gray-400 truncate">{{ Auth::user()->email }}</p>
-    </div>
+    $secretariaNav = [
+        ['label' => 'Dashboard', 'route' => 'dashboard', 'match' => ['dashboard'], 'icon' => 'dashboard'],
+        ['label' => 'Registrar pagos', 'route' => 'secretaria.cobros.index', 'match' => ['secretaria.cobros.*', 'secretaria.ordenes-pago.*'], 'icon' => 'receipt'],
+        ['label' => 'Facturaciones', 'route' => 'secretaria.facturas.index', 'match' => ['secretaria.facturas.*'], 'icon' => 'invoice'],
+        ['label' => 'Socios', 'route' => 'admin.socios.index', 'match' => ['admin.socios.*'], 'icon' => 'contacts'],
+        ['label' => 'Reportes ingresos', 'route' => 'secretaria.reportes.index', 'match' => ['secretaria.reportes.*'], 'icon' => 'chart'],
+        ['label' => 'Mi perfil', 'route' => 'secretaria.perfil.index', 'match' => ['secretaria.perfil.*'], 'icon' => 'profile'],
+    ];
 
-    <!-- Navigation -->
-    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        <!-- Dashboard -->
-        <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z"/>
-                <path d="M3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"/>
-                <path d="M14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-            </svg>
-            <span class="group-hover:text-white">Dashboard</span>
-        </a>
+    $iconPaths = [
+        'dashboard' => '<path stroke-linecap="round" stroke-linejoin="round" d="M4.75 5.75h6.5v5.5h-6.5zm8 0h6.5v8.5h-6.5zm-8 7h6.5v5.5h-6.5zm8 4h6.5v1.5h-6.5z" />',
+        'contacts' => '<path stroke-linecap="round" stroke-linejoin="round" d="M5.75 5.75h12.5v12.5H5.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 10a1.75 1.75 0 113.5 0A1.75 1.75 0 019 10zm5.25 5.25a3.75 3.75 0 00-7.5 0" />',
+        'invoice' => '<path stroke-linecap="round" stroke-linejoin="round" d="M7.75 3.75h6.5l3 3v10.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 016.25 17.25v-12A1.5 1.5 0 017.75 3.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 3.75v3h3M9 10h6M9 13h6M9 16h3" />',
+        'receipt' => '<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 4.75h9a1.75 1.75 0 011.75 1.75v10.75l-2.25-1.5-2.25 1.5-2.25-1.5-2.25 1.5-2.25-1.5-2.25 1.5V6.5A1.75 1.75 0 017.5 4.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.5h6M9 11.5h6M9 14.5h3" />',
+        'chart' => '<path stroke-linecap="round" stroke-linejoin="round" d="M5.75 18.25V5.75m0 12.5h12.5M9 15.75v-4.5m3 4.5v-7m3 7v-9.5" />',
+        'profile' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 12.25a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM5.75 19.25a6.25 6.25 0 0112.5 0" />',
+        'logout' => '<path stroke-linecap="round" stroke-linejoin="round" d="M10.75 4.75H7A2.25 2.25 0 004.75 7v10A2.25 2.25 0 007 19.25h3.75" /><path stroke-linecap="round" stroke-linejoin="round" d="M14 15.25l3.5-3.5-3.5-3.5M17.25 11.75h-8.5" />',
+    ];
+@endphp
 
-        <div class="pt-4 pb-2">
-            <p class="px-4 text-xs font-semibold text-gray-400 uppercase">Gestión</p>
-        </div>
+<div data-sidebar-overlay class="fixed inset-0 z-40 hidden bg-emerald-950/45 backdrop-blur-sm md:hidden"></div>
 
-        <!-- Socios -->
-        <a href="{{ route('admin.socios.index') }}" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM16 15a3 3 0 00-3-3H9a3 3 0 00-3 3v2h10v-2z"/>
-            </svg>
-            <span class="group-hover:text-white">Gestión de Socios</span>
-        </a>
+<button
+    type="button"
+    data-sidebar-open
+    class="fixed left-4 top-4 z-[72] flex h-11 w-11 items-center justify-center rounded-2xl border border-white/30 bg-emerald-700 text-white shadow-[0_18px_35px_rgba(6,95,70,0.28)] backdrop-blur-sm md:hidden"
+    aria-label="Abrir menu secretaria"
+>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 6.75h14.5M4.75 12h14.5M4.75 17.25h14.5" />
+    </svg>
+</button>
 
-        <!-- Facturas -->
-        <a href="{{ route('secretaria.facturas.index') }}" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-            </svg>
-            <span class="group-hover:text-white">Facturas</span>
-        </a>
+<aside
+    data-secretaria-sidebar
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-72 -translate-x-full flex-col overflow-hidden border-r border-emerald-100/20 bg-[linear-gradient(180deg,#0f9f6e_0%,#047857_48%,#064e3b_100%)] text-white shadow-2xl transition duration-300 ease-out md:z-40 md:translate-x-0"
+>
+    <div class="flex h-full w-full flex-col px-4 py-5">
+        <div data-sidebar-header class="flex items-center justify-between gap-3 px-2">
+            <div class="flex min-w-0 items-center gap-3">
+                @if (!empty($companySettings['company_logo']))
+                    <div data-sidebar-brand class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.65rem] bg-white p-1.5 shadow-[0_16px_30px_rgba(6,78,59,0.22)]">
+                        <img src="{{ asset($companySettings['company_logo']) }}" alt="Logo empresa" class="h-full w-full object-contain">
+                    </div>
+                @else
+                    <div data-sidebar-brand class="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.65rem] bg-white/15 text-lg font-black text-white">
+                        {{ strtoupper(substr($companySettings['company_name'] ?? 'E', 0, 1)) }}
+                    </div>
+                @endif
+                <div class="min-w-0" data-sidebar-label>
+                    <p class="truncate text-base font-semibold">{{ $companySettings['company_name'] ?? 'EPSAS' }}</p>
+                    <p class="truncate text-xs text-emerald-100">Panel secretaria</p>
+                </div>
+            </div>
 
-        <!-- Cobros -->
-        <a href="{{ route('secretaria.cobros.index') }}" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M8.16 2.75a.75.75 0 00-1.32 0l-.83 2.47a.75.75 0 01-.576.548l-2.569.274a.75.75 0 00-.416 1.279l1.867 1.82a.75.75 0 01.215.816l-.441 2.57a.75.75 0 001.088.791l2.298-1.209a.75.75 0 01.659 0l2.298 1.209a.75.75 0 001.088-.79l-.441-2.573a.75.75 0 01.215-.816l1.867-1.82a.75.75 0 00-.416-1.28l-2.57-.274a.75.75 0 01-.575-.548l-.83-2.47z"/>
-            </svg>
-            <span class="group-hover:text-white">Cobros</span>
-        </a>
-
-        <!-- Historial de Pagos -->
-        <a href="{{ route('secretaria.reportes.index') }}" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-            </svg>
-            <span class="group-hover:text-white">Historial de Pagos</span>
-        </a>
-
-        <div class="pt-4 pb-2">
-            <p class="px-4 text-xs font-semibold text-gray-400 uppercase">Reportes</p>
-        </div>
-
-        <!-- Reportes -->
-        <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M2 9a1 1 0 011-1h16a1 1 0 011 1v8a2 2 0 01-2 2H4a2 2 0 01-2-2V9zm13-4a1 1 0 11-2 0 1 1 0 012 0zM9 5a1 1 0 11-2 0 1 1 0 012 0zm6 0a1 1 0 11-2 0 1 1 0 012 0zM9 1a1 1 0 11-2 0 1 1 0 012 0zm6 0a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"/>
-            </svg>
-            <span class="group-hover:text-white">Reportes</span>
-        </a>
-
-        <!-- Mi Perfil -->
-        <div class="pt-4 pb-2">
-            <p class="px-4 text-xs font-semibold text-gray-400 uppercase">Usuario</p>
-        </div>
-
-        <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition group">
-            <svg class="w-5 h-5 mr-3 group-hover:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-            </svg>
-            <span class="group-hover:text-white">Mi Perfil</span>
-        </a>
-    </nav>
-
-    <!-- Logout -->
-    <div class="px-4 py-4 border-t border-gray-700">
-        <form method="POST" action="{{ route('logout') }}" class="w-full">
-            @csrf
-            <button type="submit" class="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-red-900 hover:text-white rounded-lg transition">
-                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/>
+            <button
+                type="button"
+                data-sidebar-toggle
+                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white transition hover:bg-white/15 md:flex"
+                aria-label="Contraer menu"
+            >
+                <svg data-sidebar-toggle-icon xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6" />
                 </svg>
-                <span>Cerrar Sesión</span>
             </button>
-        </form>
+
+            <button
+                type="button"
+                data-sidebar-close
+                class="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white md:hidden"
+                aria-label="Cerrar menu"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+        </div>
+
+        <div data-sidebar-profile class="mt-6 rounded-[1.75rem] border border-white/15 bg-white/10 p-4 shadow-inner shadow-white/5 backdrop-blur-sm">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-sm font-bold text-emerald-700">
+                    @if ($secUser?->persona?->foto_url)
+                        <img src="{{ $secUser->persona->foto_url }}" alt="Foto secretaria" class="h-full w-full object-cover">
+                    @else
+                        {{ strtoupper(substr($secUser?->name ?? 'S', 0, 1)) }}
+                    @endif
+                </div>
+                <div class="min-w-0" data-sidebar-label>
+                    <p class="truncate text-sm font-semibold text-white">{{ $secUser?->name }}</p>
+                    <p class="truncate text-xs text-emerald-100">{{ $secUser?->email }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex-1 overflow-y-auto overflow-x-hidden pr-1" data-sidebar-nav>
+            <nav class="space-y-2">
+                @foreach ($secretariaNav as $item)
+                    @php($active = request()->routeIs(...$item['match']))
+                    <a
+                        href="{{ route($item['route']) }}"
+                        class="{{ $active ? 'bg-white text-emerald-950 shadow-[0_14px_26px_rgba(255,255,255,0.18)]' : 'text-emerald-50 hover:bg-white/10 hover:text-white' }} group flex items-center gap-3 rounded-2xl px-3 py-3 transition"
+                        data-sidebar-item
+                        title="{{ $item['label'] }}"
+                    >
+                        <span class="{{ $active ? 'bg-emerald-100 text-emerald-700' : 'bg-white/10 text-white group-hover:bg-white/15' }} flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                {!! $iconPaths[$item['icon']] !!}
+                            </svg>
+                        </span>
+                        <span class="truncate text-sm font-semibold" data-sidebar-label>{{ $item['label'] }}</span>
+                    </a>
+                @endforeach
+            </nav>
+        </div>
+
+        <div data-sidebar-footer class="mt-6 border-t border-white/15 pt-4">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-emerald-50 transition hover:bg-white/10 hover:text-white" data-sidebar-item>
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white group-hover:bg-white/15">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            {!! $iconPaths['logout'] !!}
+                        </svg>
+                    </span>
+                    <span class="truncate text-sm font-semibold" data-sidebar-label>Cerrar sesion</span>
+                </button>
+            </form>
+        </div>
     </div>
-</div>
+</aside>

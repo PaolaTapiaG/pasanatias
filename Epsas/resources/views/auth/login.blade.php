@@ -3,9 +3,9 @@
 @section('title', 'Iniciar sesion - EPSAS')
 
 @section('content')
-<div class="min-h-screen bg-[linear-gradient(180deg,#1f6ec0_0%,#155dab_46%,#0f4f95_100%)] px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
-        <div class="grid w-full max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-[0_30px_80px_rgba(7,42,89,0.35)] lg:grid-cols-[1.02fr_0.98fr]">
+<div class="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#1f6ec0_0%,#155dab_46%,#0f4f95_100%)] px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+    <div class="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-6xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
+        <div class="grid w-full max-w-5xl overflow-hidden rounded-[1.6rem] bg-white shadow-[0_30px_80px_rgba(7,42,89,0.35)] sm:rounded-[2rem] lg:grid-cols-[1.02fr_0.98fr]">
             <section class="relative hidden overflow-hidden bg-[linear-gradient(180deg,#2a82d6_0%,#1760af_56%,#114c91_100%)] lg:block">
                 <div class="absolute inset-y-[-8%] right-[-22%] w-[50%] rounded-l-[999px] bg-white"></div>
                 <div class="absolute left-10 top-10 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
@@ -31,15 +31,15 @@
                 </div>
             </section>
 
-            <section class="bg-white px-6 py-8 sm:px-8 lg:px-12 lg:py-12">
+            <section class="bg-white px-5 py-7 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
                 <div class="mx-auto flex h-full w-full max-w-md flex-col justify-center">
-                    <div class="mb-8">
+                    <div class="mb-7 sm:mb-8">
                         <p class="text-sm font-medium uppercase tracking-[0.25em] text-blue-700 lg:hidden">EPSAS</p>
                         <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
                             Iniciar sesion
                         </h2>
                         <p class="mt-3 text-sm leading-6 text-slate-500">
-                            Ingresa con tu correo institucional para acceder al sistema.
+                            Ingresa con tu usuario o correo para acceder al sistema.
                         </p>
                     </div>
 
@@ -65,12 +65,12 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('login.submit') }}" class="space-y-5">
+                    <form method="POST" action="{{ route('login.submit') }}" class="space-y-4 sm:space-y-5">
                         @csrf
 
                         <div>
-                            <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">
-                                Correo electronico
+                            <label for="login" class="mb-2 block text-sm font-semibold text-slate-700">
+                                Usuario o correo
                             </label>
                             <div class="relative">
                                 <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -80,17 +80,17 @@
                                     </svg>
                                 </span>
                                 <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value="{{ old('email') }}"
+                                    type="text"
+                                    id="login"
+                                    name="login"
+                                    value="{{ old('login') }}"
                                     required
                                     autofocus
-                                    placeholder="nombre@ejemplo.com"
-                                    class="h-12 w-full rounded-2xl border bg-slate-50 pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 @error('email') border-red-300 focus:ring-red-100 @else border-slate-200 focus:ring-blue-100 @enderror"
+                                    placeholder="usuario o nombre@ejemplo.com"
+                                    class="h-12 w-full rounded-2xl border bg-slate-50 pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 @error('login') border-red-300 focus:ring-red-100 @else border-slate-200 focus:ring-blue-100 @enderror"
                                 >
                             </div>
-                            @error('email')
+                            @error('login')
                                 <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                             @enderror
                         </div>
@@ -131,11 +131,11 @@
 
                         <div class="space-y-3 pt-2">
                             <button
-    type="submit"
-    class="flex h-12 w-full items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#1b6cc2,#0d57a9)] text-sm font-bold text-white shadow-[0_14px_28px_rgba(13,87,169,0.22)] transition hover:opacity-95 focus:outline-none focus:ring-4 focus:ring-blue-200 cursor-pointer"
->
-    Iniciar sesion
-</button>
+                                type="submit"
+                                class="flex h-12 w-full cursor-pointer items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#1b6cc2,#0d57a9)] text-sm font-bold text-white shadow-[0_14px_28px_rgba(13,87,169,0.22)] transition hover:opacity-95 focus:outline-none focus:ring-4 focus:ring-blue-200"
+                            >
+                                Iniciar sesion
+                            </button>
 
                             <a
                                 href="{{ route('password.request') }}"

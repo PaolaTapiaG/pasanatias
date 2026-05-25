@@ -16,6 +16,12 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected static function booted(): void
+    {
+        static::saved(fn (self $user) => $user->flushAuthCache());
+        static::deleted(fn (self $user) => $user->flushAuthCache());
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -23,6 +29,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'id_persona',
         'password',
@@ -138,8 +145,14 @@ class User extends Authenticatable
     {
         return Cache::remember(
             "user:{$this->getKey()}:role-names",
-            now()->addMinutes(10),
+            now()->addMinutes((int) config('auth.user_cache_minutes', 1440)),
             fn() => $this->roles()->pluck('name')
         );
+    }
+
+    public function flushAuthCache(): void
+    {
+        Cache::forget('auth:user:' . str_replace('\\', '.', static::class) . ':' . $this->getAuthIdentifier());
+        Cache::forget("user:{$this->getKey()}:role-names");
     }
 }

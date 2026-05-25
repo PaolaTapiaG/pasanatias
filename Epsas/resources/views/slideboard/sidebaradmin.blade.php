@@ -1,78 +1,20 @@
 @php
-    $sidebarStats = \Illuminate\Support\Facades\Cache::remember('sidebar.admin.stats', now()->addMinutes(10), function () {
-        return [
-            'users' => \App\Models\User::count(),
-            'roles' => \App\Models\Role::count(),
-        ];
-    });
+    $companySettings = $sharedCompanySettings ?? [];
+    $adminUser = $sharedAuthUser ?? auth()->user()?->loadMissing('persona');
 
     $adminNav = [
-        [
-            'label' => 'Dashboard',
-            'route' => 'dashboard',
-            'match' => ['dashboard'],
-            'icon' => 'dashboard',
-        ],
-        [
-            'label' => 'Usuarios',
-            'route' => 'admin.usuarios.index',
-            'match' => ['admin.usuarios.*'],
-            'icon' => 'users',
-        ],
-        [
-            'label' => 'Socios',
-            'route' => 'admin.socios.index',
-            'match' => ['admin.socios.*'],
-            'icon' => 'contacts',
-        ],
-        [
-            'label' => 'Empleados',
-            'route' => 'admin.empleados.index',
-            'match' => ['admin.empleados.*'],
-            'icon' => 'users',
-        ],
-        [
-            'label' => 'Tarifas',
-            'route' => 'admin.tarifas.index',
-            'match' => ['admin.tarifas.*'],
-            'icon' => 'receipt',
-        ],
-        [
-            'label' => 'Facturacion',
-            'route' => 'secretaria.facturas.index',
-            'match' => ['secretaria.facturas.*'],
-            'icon' => 'invoice',
-        ],
-        [
-            'label' => 'Cobros',
-            'route' => 'secretaria.cobros.index',
-            'match' => ['secretaria.cobros.*'],
-            'icon' => 'receipt',
-        ],
-        [
-            'label' => 'Reportes',
-            'route' => 'secretaria.reportes.index',
-            'match' => ['secretaria.reportes.*'],
-            'icon' => 'document',
-        ],
-        [
-            'label' => 'Roles y permisos',
-            'route' => 'admin.permisos.index',
-            'match' => ['admin.permisos.*'],
-            'icon' => 'shield',
-        ],
-        [
-            'label' => 'Configuracion',
-            'route' => 'admin.configuracion.index',
-            'match' => ['admin.configuracion.*'],
-            'icon' => 'settings',
-        ],
-        [
-            'label' => 'Auditoria',
-            'route' => 'admin.auditoria.index',
-            'match' => ['admin.auditoria.*'],
-            'icon' => 'document',
-        ],
+        ['label' => 'Dashboard', 'route' => 'dashboard', 'match' => ['dashboard'], 'icon' => 'dashboard'],
+        ['label' => 'Socios', 'route' => 'admin.socios.index', 'match' => ['admin.socios.*'], 'icon' => 'contacts'],
+        ['label' => 'Empleados', 'route' => 'admin.empleados.index', 'match' => ['admin.empleados.*'], 'icon' => 'users'],
+        ['label' => 'Tarifas', 'route' => 'admin.tarifas.index', 'match' => ['admin.tarifas.*'], 'icon' => 'receipt'],
+        ['label' => 'Medidores', 'route' => 'tecnico.medidores.index', 'match' => ['admin.medidores.*', 'tecnico.medidores.*'], 'icon' => 'meter'],
+        ['label' => 'Lecturaciones', 'route' => 'tecnico.lecturas.index', 'match' => ['tecnico.lecturas.*'], 'icon' => 'document'],
+        ['label' => 'Facturacion', 'route' => 'secretaria.facturas.index', 'match' => ['secretaria.facturas.*'], 'icon' => 'invoice'],
+        ['label' => 'Cobros', 'route' => 'secretaria.cobros.index', 'match' => ['secretaria.cobros.*'], 'icon' => 'receipt'],
+        ['label' => 'Pagos QR', 'route' => 'secretaria.ordenes-pago.index', 'match' => ['secretaria.ordenes-pago.*'], 'icon' => 'receipt'],
+        ['label' => 'Gastos', 'route' => 'admin.gastos.index', 'match' => ['admin.gastos.*'], 'icon' => 'receipt'],
+        ['label' => 'Reportes', 'route' => 'secretaria.reportes.index', 'match' => ['secretaria.reportes.*'], 'icon' => 'document'],
+        ['label' => 'Configuracion', 'route' => 'admin.configuracion.index', 'match' => ['admin.configuracion.*'], 'icon' => 'settings'],
     ];
 
     $iconPaths = [
@@ -84,43 +26,88 @@
         'document' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3.75h5.38l3.12 3.12v9.38A1.75 1.75 0 0115 18H8.25A1.75 1.75 0 016.5 16.25V5.5A1.75 1.75 0 018.25 3.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 3.75v3.75h3.75M9 10.5h4.5M9 13.5h4.5" />',
         'receipt' => '<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 4.75h9a1.75 1.75 0 011.75 1.75v10.75l-2.25-1.5-2.25 1.5-2.25-1.5-2.25 1.5-2.25-1.5-2.25 1.5V6.5A1.75 1.75 0 017.5 4.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.5h6M9 11.5h6" />',
         'invoice' => '<path stroke-linecap="round" stroke-linejoin="round" d="M7.75 3.75h6.5l3 3v10.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 016.25 17.25v-12A1.5 1.5 0 017.75 3.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 3.75v3h3M9 10h6M9 13h6M9 16h3" />',
+        'meter' => '<path stroke-linecap="round" stroke-linejoin="round" d="M5.75 18.25h12.5V9.5a6.25 6.25 0 10-12.5 0v8.75z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 12l2.5-2.5" /><path stroke-linecap="round" stroke-linejoin="round" d="M8.75 18.25v-1.5m6.5 1.5v-1.5" />',
         'logout' => '<path stroke-linecap="round" stroke-linejoin="round" d="M10.75 4.75H7A2.25 2.25 0 004.75 7v10A2.25 2.25 0 007 19.25h3.75" /><path stroke-linecap="round" stroke-linejoin="round" d="M14 15.25l3.5-3.5-3.5-3.5M17.25 11.75h-8.5" />',
-        'toggle' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 6.75l4.5 5-4.5 5" />',
     ];
 @endphp
+
+<div data-sidebar-overlay class="fixed inset-0 z-40 hidden bg-slate-950/45 backdrop-blur-sm md:hidden"></div>
+
+<button
+    type="button"
+    data-sidebar-open
+    class="fixed left-4 top-4 z-[72] flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-slate-900/95 text-white shadow-[0_18px_35px_rgba(15,23,42,0.28)] backdrop-blur-sm md:hidden"
+    aria-label="Abrir menu"
+>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 6.75h14.5M4.75 12h14.5M4.75 17.25h14.5" />
+    </svg>
+</button>
 
 <aside
     id="admin-sidebar"
     data-admin-sidebar
-    class="fixed inset-y-0 left-0 z-40 hidden h-screen shrink-0 border-r border-white/10 bg-[linear-gradient(180deg,#255fbd_0%,#1f54b0_52%,#183f8c_100%)] text-white shadow-[0_20px_45px_rgba(17,55,120,0.28)] transition-[width] duration-300 ease-out md:flex md:w-72"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-72 shrink-0 -translate-x-full border-r border-white/10 bg-[linear-gradient(180deg,#255fbd_0%,#1f54b0_52%,#183f8c_100%)] text-white shadow-[0_20px_45px_rgba(17,55,120,0.28)] transition duration-300 ease-out md:z-40 md:translate-x-0"
 >
-    <div class="flex h-full w-full flex-col px-4 py-5">
-        <div class="flex items-center justify-between gap-3 px-2">
+    <div class="flex h-full w-full flex-col overflow-hidden px-4 py-5">
+        <div data-sidebar-header class="flex items-center justify-between gap-3 px-2">
             <div class="flex min-w-0 items-center gap-3">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-black text-white shadow-inner shadow-white/10">
-                    E
-                </div>
-                <div class="min-w-0 data-[collapsed=true]:hidden" data-sidebar-label>
-                    <p class="truncate text-base font-semibold">EPSAS</p>
-                    <p class="truncate text-xs text-blue-100/80">Panel administrativo</p>
+                @if (!empty($companySettings['company_logo']))
+                    <div data-sidebar-brand class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.65rem] bg-white/15 p-1.5 shadow-inner shadow-white/10">
+                        <img src="{{ asset($companySettings['company_logo']) }}" alt="Logo empresa" class="h-full w-full object-contain">
+                    </div>
+                @else
+                    <div data-sidebar-brand class="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.65rem] bg-white/15 text-lg font-black text-white shadow-inner shadow-white/10">
+                        {{ strtoupper(substr($companySettings['company_name'] ?? 'E', 0, 1)) }}
+                    </div>
+                @endif
+                <div class="min-w-0" data-sidebar-label data-sidebar-persistent>
+                    <p class="truncate text-base font-semibold">{{ $companySettings['company_name'] ?? 'EPSAS' }}</p>
+                    <p class="truncate text-xs text-blue-100/80">{{ $companySettings['company_alias'] ?? 'Panel administrativo' }}</p>
                 </div>
             </div>
 
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    data-sidebar-toggle
+                    class="hidden h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15 md:flex"
+                    aria-label="Expandir o contraer sidebar"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" data-sidebar-toggle-icon class="h-5 w-5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 6.75l4.5 5-4.5 5" />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    data-sidebar-close
+                    class="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white md:hidden"
+                    aria-label="Cerrar menu"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <div class="mt-6 rounded-[1.75rem] border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+        <div data-sidebar-profile class="mt-6 rounded-[1.75rem] border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
             <div class="flex items-center gap-3">
                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-sm font-bold text-white">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    @if ($adminUser?->persona?->foto_url)
+                        <img src="{{ $adminUser->persona->foto_url }}" alt="Foto perfil" class="h-11 w-11 rounded-2xl object-cover">
+                    @else
+                        {{ strtoupper(substr($adminUser?->name ?? 'A', 0, 1)) }}
+                    @endif
                 </div>
-                <div class="min-w-0 data-[collapsed=true]:hidden" data-sidebar-label>
-                    <p class="truncate text-sm font-semibold text-white">{{ Auth::user()->name }}</p>
-                    <p class="truncate text-xs text-blue-100/80">{{ Auth::user()->email }}</p>
+                <div class="min-w-0" data-sidebar-label data-sidebar-persistent>
+                    <p class="truncate text-sm font-semibold text-white">{{ $adminUser?->name }}</p>
+                    <p class="truncate text-xs text-blue-100/80">{{ $adminUser?->email }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="mt-6 flex-1 overflow-y-auto">
+        <div class="mt-6 flex-1 overflow-y-auto overflow-x-hidden pr-1" data-sidebar-nav>
             <nav class="space-y-2">
                 @foreach ($adminNav as $item)
                     @php
@@ -129,6 +116,7 @@
                     <a
                         href="{{ route($item['route']) }}"
                         class="{{ $active ? 'bg-white text-blue-800 shadow-[0_14px_26px_rgba(255,255,255,0.16)]' : 'text-blue-100/90 hover:bg-white/10 hover:text-white' }} group flex items-center gap-3 rounded-2xl px-3 py-3 transition"
+                        data-sidebar-item
                         title="{{ $item['label'] }}"
                     >
                         <span class="{{ $active ? 'bg-blue-100 text-blue-700' : 'bg-white/10 text-white/90 group-hover:bg-white/15' }} flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition">
@@ -136,42 +124,20 @@
                                 {!! $iconPaths[$item['icon']] !!}
                             </svg>
                         </span>
-                        <span class="truncate text-sm font-medium data-[collapsed=true]:hidden" data-sidebar-label>{{ $item['label'] }}</span>
+                        <span class="truncate text-sm font-medium" data-sidebar-label>{{ $item['label'] }}</span>
                     </a>
                 @endforeach
             </nav>
 
-            <div class="mt-8 rounded-[1.75rem] border border-white/10 bg-white/8 p-4 data-[collapsed=true]:hidden" data-sidebar-label>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-100/70">Resumen</p>
-                <div class="mt-4 space-y-4">
-                    <div>
-                        <div class="mb-2 flex items-center justify-between text-xs text-blue-100/80">
-                            <span>Usuarios</span>
-                            <span>{{ $sidebarStats['users'] }}</span>
-                        </div>
-                        <div class="h-2 rounded-full bg-white/10">
-                            <div class="h-2 w-3/4 rounded-full bg-white/75"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="mb-2 flex items-center justify-between text-xs text-blue-100/80">
-                            <span>Roles</span>
-                            <span>{{ $sidebarStats['roles'] }}</span>
-                        </div>
-                        <div class="h-2 rounded-full bg-white/10">
-                            <div class="h-2 w-1/2 rounded-full bg-blue-200"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <div class="mt-6 border-t border-white/10 pt-4">
+        <div data-sidebar-footer class="mt-6 border-t border-white/10 pt-4">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button
                     type="submit"
                     class="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-blue-100/90 transition hover:bg-white/10 hover:text-white"
+                    data-sidebar-item
                     title="Cerrar sesion"
                 >
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/90 group-hover:bg-white/15">
@@ -179,7 +145,7 @@
                             {!! $iconPaths['logout'] !!}
                         </svg>
                     </span>
-                    <span class="truncate text-sm font-medium data-[collapsed=true]:hidden" data-sidebar-label>Cerrar sesion</span>
+                    <span class="truncate text-sm font-medium" data-sidebar-label>Cerrar sesion</span>
                 </button>
             </form>
         </div>

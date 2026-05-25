@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.15),_transparent_20%),linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)]">
-    @include('slideboard.sidebaradmin')
+    @include('partials.role-sidebar')
 
     <div data-admin-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
         <header class="border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">

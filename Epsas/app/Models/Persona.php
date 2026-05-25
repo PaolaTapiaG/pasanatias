@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Persona extends Model
 {
@@ -36,7 +38,19 @@ class Persona extends Model
             return null;
         }
 
-        return asset($this->foto_path);
+        if (Str::startsWith($this->foto_path, ['http://', 'https://'])) {
+            return $this->foto_path;
+        }
+
+        if (Str::startsWith($this->foto_path, 'storage/')) {
+            return asset($this->foto_path);
+        }
+
+        if (Str::startsWith($this->foto_path, 'uploads/')) {
+            return asset($this->foto_path);
+        }
+
+        return Storage::disk('public')->url($this->foto_path);
     }
 
     // ── Relaciones ─────────────────────────────

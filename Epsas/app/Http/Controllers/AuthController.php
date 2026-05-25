@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Services\CredentialNotificationService;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
+    public function __construct(private CredentialNotificationService $credentialNotifications)
+    {
+    }
+
     public function showLogin()
     {
         if (Auth::check()) {
@@ -23,19 +28,29 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $login = trim((string) $credentials['login']);
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $loginValue = in_array($field, ['email', 'username'], true) ? mb_strtolower($login) : $login;
+
+        if (Auth::attempt([$field => $loginValue, 'password' => $credentials['password']], $request->boolean('remember'))) {
             $request->session()->regenerate();
+            $user = Auth::user()->loadMissing('persona');
+            $roles = $user->cachedRoleNames();
+
+            Cache::put($this->authUserCacheKey($user), $user, now()->addMinutes((int) config('auth.user_cache_minutes', 1440)));
+            $this->warmSharedSettings();
+            $this->deferRoleWarmup($roles);
 
             return redirect()->route('dashboard')
-                ->with('success', 'Bienvenido ' . Auth::user()->name);
+                ->with('success', 'Bienvenido ' . $user->name);
         }
 
         return back()
-            ->withInput($request->only('email'))
+            ->withInput($request->only('login'))
             ->with('error', 'Las credenciales no coinciden con nuestros registros.');
     }
 
@@ -47,13 +62,15 @@ class AuthController extends Controller
     public function sendRecoveryCode(Request $request)
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'login' => ['required', 'string'],
         ]);
 
-        $user = User::with('persona')->where('email', $data['email'])->first();
+        $login = trim((string) $data['login']);
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $user = User::with('persona')->where($field, mb_strtolower($login))->first();
 
-        if (!$user || !$user->persona?->telefono) {
-            return back()->withInput()->with('error', 'No se encontro un empleado con ese correo y telefono registrado.');
+        if (!$user || (!$user->persona?->telefono && !$user->email)) {
+            return back()->withInput()->with('error', 'No se encontro un empleado con datos de contacto validos para enviar la recuperacion.');
         }
 
         $code = (string) random_int(100000, 999999);
@@ -63,14 +80,11 @@ class AuthController extends Controller
             'email' => $user->email,
         ], now()->addMinutes(10));
 
-        Log::info('[SMS RECUPERACION] Codigo enviado', [
-            'telefono' => $user->persona->telefono,
-            'mensaje' => "Tu codigo de recuperacion EPSAS es {$code}.",
-        ]);
+        $this->credentialNotifications->sendRecoveryCode($user, $code);
 
         return redirect()
             ->route('password.reset.code', ['email' => $user->email])
-            ->with('success', 'Se envio un codigo de recuperacion por SMS al telefono del empleado.')
+            ->with('success', 'Se envio el codigo de recuperacion por SMS y correo cuando fue posible.')
             ->with('sms_debug_code', app()->isLocal() ? $code : null);
     }
 
@@ -122,5 +136,34 @@ class AuthController extends Controller
     private function recoveryCacheKey(string $email): string
     {
         return 'auth:recovery:' . sha1(strtolower($email));
+    }
+
+    private function authUserCacheKey(User $user): string
+    {
+        return 'auth:user:' . str_replace('\\', '.', $user::class) . ':' . $user->getAuthIdentifier();
+    }
+
+    private function warmSharedSettings(): void
+    {
+        Cache::remember('shared_company_settings', now()->addDays(7), fn () => SystemSetting::getValue('general', [
+            'company_name' => 'EPSAS',
+            'company_alias' => 'Panel administrativo',
+            'company_logo' => null,
+        ]));
+    }
+
+    private function deferRoleWarmup($roles): void
+    {
+        if (app()->runningInConsole() || !filter_var(env('ENABLE_LOGIN_WARMUP', false), FILTER_VALIDATE_BOOL)) {
+            return;
+        }
+
+        app()->terminating(function () use ($roles) {
+            try {
+                app(DashboardController::class)->warmForRoles($roles);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        });
     }
 }

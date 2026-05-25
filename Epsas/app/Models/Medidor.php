@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Medidor extends Model
 {
@@ -13,6 +14,8 @@ class Medidor extends Model
 
     protected $fillable = [
         'numero_serie',
+        'marca',
+        'modelo',
         'fecha_instalacion',
         'estado',
         'id_socio',
@@ -28,8 +31,19 @@ class Medidor extends Model
         return $this->belongsTo(Socio::class, 'id_socio', 'id_socio');
     }
 
+    public function empleadoInstalador(): BelongsTo
+    {
+        return $this->belongsTo(Empleado::class, 'id_empleado_instalador', 'id_empleado');
+    }
+
     public function lecturas(): HasMany
     {
         return $this->hasMany(Lectura::class, 'id_medidor', 'id_medidor');
+    }
+
+    public function ultimaLectura(): HasOne
+    {
+        return $this->hasOne(Lectura::class, 'id_medidor', 'id_medidor')
+            ->latestOfMany('fecha_lectura');
     }
 }

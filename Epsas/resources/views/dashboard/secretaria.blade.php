@@ -2,231 +2,212 @@
 
 @section('title', 'Panel Secretaria - EPSAS')
 
+@php
+    $stats = $secretariaStats ?? [
+        'socios_activos' => 0,
+        'facturas_pendientes' => 0,
+        'qr_pendientes' => 0,
+        'ingresos_mes' => 0,
+    ];
+@endphp
+
 @section('content')
-<div class="flex h-screen bg-gray-50">
-    <!-- Sidebar Secretaria -->
+<div class="page-background min-h-screen bg-white">
     @include('slideboard.sidebarsec')
 
-    <!-- Main Content -->
-    <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
-        <!-- Top Navbar -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="flex items-center justify-between h-16 px-6">
-                <h1 class="text-2xl font-bold text-gray-900">Panel de Secretaria</h1>
-                <div class="flex items-center space-x-4">
-                    <button class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="absolute top-1 right-1 block w-2 h-2 bg-green-500 rounded-full"></span>
-                    </button>
-                    <div class="w-1 h-8 bg-gray-200"></div>
-                    <div class="flex items-center">
-                        <img class="w-10 h-10 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=10B981&color=fff" alt="Avatar">
-                        <span class="ml-3 text-sm font-medium text-gray-700">{{ Auth::user()->name }}</span>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <div data-sidebar-main class="min-h-screen transition-[padding] duration-300 ease-out md:pl-72">
+        @include('partials.header-with-notifications', [
+            'headerRole' => 'Secretaria',
+            'headerTitle' => 'Panel de secretaria',
+            'companyName' => $sharedCompanySettings['company_name'] ?? 'EPSAS EL PORTILLO',
+            'userName' => $user?->name ?? Auth::user()->name ?? '',
+            'userEmail' => $user?->email ?? Auth::user()->email ?? '',
+            'profilePhoto' => $user?->persona?->foto_url ?? null,
+        ])
 
-        <!-- Page Content -->
-        <main class="flex-1 overflow-y-auto p-6">
+        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             @if (session('success'))
-                <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-start">
-                    <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    <div>
-                        <p class="font-medium">¡Éxito!</p>
-                        <p class="text-sm">{{ session('success') }}</p>
-                    </div>
+                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-sm">
+                    {{ session('success') }}
                 </div>
             @endif
 
-            <!-- Welcome Section -->
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-gray-900">¡Bienvenida, {{ Auth::user()->name }}!</h2>
-                <p class="text-gray-600 mt-2">Panel de gestión administrativa de facturas y cobros</p>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Socios -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm font-medium">Socios Registrados</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">{{ \App\Models\Socio::count() }}</p>
-                            <p class="text-xs text-gray-500 mt-2">Clientes activos</p>
+            <section class="overflow-hidden rounded-[2rem] border border-emerald-100 bg-white shadow-sm">
+                <div class="grid gap-0 lg:grid-cols-[1.35fr_0.9fr]">
+                    <div class="relative overflow-hidden bg-[linear-gradient(135deg,#047857_0%,#0f9f6e_48%,#d1fae5_100%)] p-7 text-white sm:p-9">
+                        <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/15 blur-2xl"></div>
+                        <div class="absolute bottom-0 right-0 h-32 w-72 rounded-tl-full bg-white/10"></div>
+                        <p class="text-xs font-black uppercase tracking-[0.34em] text-emerald-100">Secretaria</p>
+                        <h2 class="mt-4 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
+                            Bienvenida, {{ \Illuminate\Support\Str::before($user?->name ?? Auth::user()->name ?? 'Rosa', ' ') }}
+                        </h2>
+                        <p class="mt-4 max-w-2xl text-sm leading-7 text-emerald-50 sm:text-base">
+                            Gestiona cobros, facturaciones, socios y reportes de ingresos desde un panel limpio y preparado para atencion diaria.
+                        </p>
+                        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+                            <a href="{{ route('secretaria.cobros.index') }}" class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-800 shadow-lg shadow-emerald-950/10 transition hover:bg-emerald-50">
+                                Registrar pagos
+                            </a>
+                            <a href="{{ route('secretaria.ordenes-pago.index', ['estado' => 'en_revision']) }}" class="inline-flex items-center justify-center rounded-2xl border border-white/35 px-5 py-3 text-sm font-black text-white transition hover:bg-white/10">
+                                Revisar QR pendientes
+                            </a>
                         </div>
-                        <div class="text-4xl text-green-100">🤝</div>
+                    </div>
+
+                    <div class="grid content-center gap-4 bg-emerald-50/60 p-6 sm:p-8">
+                        <article class="rounded-[1.5rem] border border-white bg-white p-5 shadow-sm">
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Turno operativo</p>
+                            <p class="mt-2 text-2xl font-black text-slate-950">{{ now()->translatedFormat('d F Y') }}</p>
+                            <p class="mt-2 text-sm text-slate-500">Los pagos QR por aprobar aparecen tambien en la campanita del encabezado.</p>
+                        </article>
+                        <article class="rounded-[1.5rem] border border-emerald-100 bg-white p-5 shadow-sm">
+                            <p class="text-sm font-semibold text-slate-500">Ingresos del mes</p>
+                            <p class="mt-2 text-3xl font-black text-emerald-700">Bs {{ number_format((float) $stats['ingresos_mes'], 2) }}</p>
+                        </article>
                     </div>
                 </div>
+            </section>
 
-                <!-- Facturas Pendientes -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
+            <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-slate-500">Socios activos</p>
+                    <p class="mt-3 text-4xl font-black text-slate-950">{{ number_format((int) $stats['socios_activos']) }}</p>
+                    <a href="{{ route('admin.socios.index') }}" class="mt-4 inline-flex text-sm font-black text-emerald-700 hover:text-emerald-800">Ver socios</a>
+                </article>
+                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-slate-500">Facturas pendientes</p>
+                    <p class="mt-3 text-4xl font-black text-amber-500">{{ number_format((int) $stats['facturas_pendientes']) }}</p>
+                    <a href="{{ route('secretaria.facturas.index') }}" class="mt-4 inline-flex text-sm font-black text-emerald-700 hover:text-emerald-800">Abrir facturaciones</a>
+                </article>
+                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-slate-500">QR por aprobar</p>
+                    <p class="mt-3 text-4xl font-black text-rose-500">{{ number_format((int) $stats['qr_pendientes']) }}</p>
+                    <a href="{{ route('secretaria.ordenes-pago.index', ['estado' => 'en_revision']) }}" class="mt-4 inline-flex text-sm font-black text-emerald-700 hover:text-emerald-800">Revisar ordenes</a>
+                </article>
+                <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-slate-500">Perfil activo</p>
+                    <p class="mt-3 truncate text-xl font-black text-slate-950">{{ $user?->email ?? Auth::user()->email }}</p>
+                    <a href="{{ route('secretaria.perfil.index') }}" class="mt-4 inline-flex text-sm font-black text-emerald-700 hover:text-emerald-800">Editar perfil</a>
+                </article>
+            </section>
+
+            <section class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium">Facturas Pendientes</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">--</p>
-                            <p class="text-xs text-gray-500 mt-2">Facturas sin emitir</p>
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Accesos directos</p>
+                            <h3 class="mt-2 text-2xl font-black text-slate-950">Ventanas de trabajo</h3>
                         </div>
-                        <div class="text-4xl text-yellow-100">📄</div>
+                    </div>
+
+                    <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                        <a href="{{ route('secretaria.cobros.index') }}" class="group rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-5 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-100">
+                            <p class="text-sm font-black text-emerald-800">Registrar pagos</p>
+                            <p class="mt-2 text-sm leading-6 text-emerald-900/70">Busca socios deudores, registra pagos y revisa ordenes QR.</p>
+                        </a>
+                        <a href="{{ route('secretaria.facturas.index') }}" class="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50">
+                            <p class="text-sm font-black text-slate-950">Facturaciones</p>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Consulta facturas, genera pendientes y envia recibos al usuario.</p>
+                        </a>
+                        <a href="{{ route('admin.socios.index') }}" class="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50">
+                            <p class="text-sm font-black text-slate-950">Socios</p>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Revisa datos, telefonos, zonas, medidores y estado de cuenta.</p>
+                        </a>
+                        <a href="{{ route('secretaria.reportes.index') }}" class="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50">
+                            <p class="text-sm font-black text-slate-950">Reportes ingresos</p>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Controla cobranza, flujo mensual y resumen financiero.</p>
+                        </a>
                     </div>
                 </div>
 
-                <!-- Cobros Pendientes -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-center justify-between gap-4">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium">Cobros Pendientes</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">--</p>
-                            <p class="text-xs text-gray-500 mt-2">Pagos por recibir</p>
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-rose-500">Revision</p>
+                            <h3 class="mt-2 text-2xl font-black text-slate-950">Pagos QR recibidos</h3>
                         </div>
-                        <div class="text-4xl text-red-100">💰</div>
+                        <span class="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600">{{ $pendingPaymentOrders->count() }}</span>
+                    </div>
+
+                    <div class="mt-6 grid gap-3">
+                        @forelse ($pendingPaymentOrders as $order)
+                            <a href="{{ route('secretaria.ordenes-pago.show', $order->codigo) }}" class="rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-emerald-200 hover:bg-emerald-50">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-black text-slate-950">{{ $order->codigo }}</p>
+                                        <p class="mt-1 truncate text-xs font-semibold text-slate-500">{{ $order->socio_nombre ?: 'Socio sin nombre' }} · {{ $order->numero_socio ?: 'Sin codigo' }}</p>
+                                    </div>
+                                    <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700">Bs {{ number_format((float) ($order->comprobante_monto ?: $order->total), 2) }}</span>
+                                </div>
+                                <p class="mt-3 text-xs font-semibold text-slate-500">{{ $order->updated_at?->diffForHumans() ?? 'Reciente' }}</p>
+                            </a>
+                        @empty
+                            <div class="rounded-[1.35rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+                                No hay comprobantes QR pendientes por aprobar.
+                            </div>
+                        @endforelse
                     </div>
                 </div>
+            </section>
 
-                <!-- Ingresos -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between">
+            <section class="mt-6 grid gap-6 xl:grid-cols-2">
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-center justify-between gap-4">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium">Ingresos Mensuales</p>
-                            <p class="text-3xl font-bold text-gray-900 mt-2">Bs. --</p>
-                            <p class="text-xs text-gray-500 mt-2">Este mes</p>
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Caja</p>
+                            <h3 class="mt-2 text-2xl font-black text-slate-950">Ultimos pagos registrados</h3>
                         </div>
-                        <div class="text-4xl text-blue-100">💵</div>
+                        <a href="{{ route('secretaria.cobros.index') }}" class="text-sm font-black text-emerald-700 hover:text-emerald-800">Abrir</a>
                     </div>
-                </div>
-            </div>
 
-            <!-- Management Panels -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Socios Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">🤝 Gestión de Socios</h3>
-                    </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-green-500 mr-3">✓</span>
-                                Registrar nuevos socios
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-green-500 mr-3">✓</span>
-                                Ver datos de clientes
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-green-500 mr-3">✓</span>
-                                Actualizar información
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-green-500 mr-3">✓</span>
-                                Gestionar servicios
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition">
-                            Ir a Socios
-                        </button>
+                    <div class="mt-6 grid gap-3">
+                        @forelse ($recentPayments as $payment)
+                            <article class="rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-black text-slate-950">{{ $payment->socio_nombre ?: 'Socio sin nombre' }}</p>
+                                        <p class="mt-1 truncate text-xs font-semibold text-slate-500">{{ $payment->numero_factura ?: 'Sin factura' }} · {{ $payment->metodo_pago ?: 'Metodo no registrado' }}</p>
+                                    </div>
+                                    <span class="shrink-0 text-sm font-black text-emerald-700">Bs {{ number_format((float) $payment->monto_pagado, 2) }}</span>
+                                </div>
+                                <p class="mt-3 text-xs font-semibold text-slate-500">{{ $payment->fecha_cobro?->format('d/m/Y') ?? 'Sin fecha' }}</p>
+                            </article>
+                        @empty
+                            <div class="rounded-[1.35rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+                                Todavia no hay pagos recientes registrados.
+                            </div>
+                        @endforelse
                     </div>
                 </div>
 
-                <!-- Facturas Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">📄 Facturas</h3>
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Operativo</p>
+                            <h3 class="mt-2 text-2xl font-black text-slate-950">Reconexiones por aprobar</h3>
+                        </div>
+                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">{{ $pendingReconnectionApprovals->count() }}</span>
                     </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Crear nuevas facturas
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Ver historial de emisiones
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Enviar por correo
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-yellow-500 mr-3">✓</span>
-                                Generar reportes
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 rounded-lg transition">
-                            Ir a Facturas
-                        </button>
+
+                    <div class="mt-6 grid gap-3">
+                        @forelse ($pendingReconnectionApprovals as $order)
+                            <article class="rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                                <p class="text-sm font-black text-slate-950">{{ $order->socio?->codigo_display ?? 'Sin socio' }} · {{ $order->socio?->persona?->nombre_completo ?? 'Usuario' }}</p>
+                                <p class="mt-1 text-xs font-semibold text-slate-500">{{ $order->zona ?: 'Sin zona' }} · {{ $order->referencia ?: 'Sin referencia' }}</p>
+                                <form method="POST" action="{{ route('secretaria.reconexiones.approve', $order->id_orden) }}" class="mt-3">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700">Aprobar reconexion</button>
+                                </form>
+                            </article>
+                        @empty
+                            <div class="rounded-[1.35rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+                                No hay solicitudes de reconexion pendientes.
+                            </div>
+                        @endforelse
                     </div>
                 </div>
-
-                <!-- Cobros Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">💰 Cobros</h3>
-                    </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-red-500 mr-3">✓</span>
-                                Registrar nuevos cobros
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-red-500 mr-3">✓</span>
-                                Ver historial de pagos
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-red-500 mr-3">✓</span>
-                                Cobros por método
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-red-500 mr-3">✓</span>
-                                Generar comprobantes
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg transition">
-                            Ir a Cobros
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Reportes Panel -->
-                <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">📊 Reportes</h3>
-                    </div>
-                    <div class="p-6">
-                        <ul class="space-y-3">
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Reportes de ingresos
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Reportes de facturación
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Análisis de cobros
-                            </li>
-                            <li class="flex items-center text-gray-700">
-                                <span class="text-blue-500 mr-3">✓</span>
-                                Exportar datos
-                            </li>
-                        </ul>
-                        <button class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition">
-                            Ver Reportes
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="mt-12 text-center text-gray-500 text-sm border-t border-gray-200 pt-6">
-                <p>© 2026 EPSAS - Sistema de Gestión de Agua. Todos los derechos reservados.</p>
-            </div>
+            </section>
         </main>
     </div>
 </div>

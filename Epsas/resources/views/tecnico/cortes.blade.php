@@ -1,0 +1,128 @@
+@component('tecnico.partials.module-layout', [
+    'moduleEyebrow' => 'Servicio',
+    'moduleTitle' => $moduleTitle,
+    'moduleDescription' => $moduleDescription,
+    'moduleStats' => $moduleStats,
+    'moduleActions' => [
+        ['label' => 'Ver reconexiones', 'href' => route('tecnico.reconexiones.index'), 'variant' => 'soft'],
+    ],
+])
+    <section class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.95fr]">
+        <article class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <h2 class="theme-text text-xl font-semibold text-slate-900 dark:text-slate-100">Programar corte</h2>
+            <form method="POST" action="{{ route('tecnico.cortes.store') }}" class="mt-6 grid gap-4 lg:grid-cols-2" data-tech-order-form="corte">
+                @csrf
+                <input type="hidden" name="prioridad" value="alta">
+                <select name="id_socio" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none" data-socio-select>
+                    <option value="">Socio afectado</option>
+                    @foreach ($socios as $socio)
+                        @php($signal = $billingSignals->get($socio->id_socio))
+                        <option
+                            value="{{ $socio->id_socio }}"
+                            data-zona="{{ $socio->sector?->nombre }}"
+                            data-referencia="{{ $signal && $signal['total_pendiente'] > 0 ? 'Deuda pendiente Bs ' . number_format($signal['total_pendiente'], 2) . ' · ' . $signal['facturas_abiertas'] . ' factura(s) abiertas' : '' }}"
+                            data-resumen="{{ $signal ? 'Pendiente Bs ' . number_format($signal['total_pendiente'], 2) . ' · vencidas ' . $signal['facturas_vencidas'] : 'Sin datos comerciales' }}"
+                            @selected(old('id_socio', $selectedSocioId) == $socio->id_socio)
+                        >
+                            {{ $socio->codigo_display }} · {{ $socio->persona?->nombre_completo }} · {{ $socio->sector?->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+                <div class="space-y-2">
+                    <input name="referencia" value="{{ old('referencia') }}" placeholder="Motivo del corte o referencia interna" class="theme-soft h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none" data-referencia-input>
+                    <p class="text-xs text-slate-500">El sistema propone una referencia con la deuda; puedes completarla con un detalle de campo si hace falta.</p>
+                </div>
+                <input type="date" name="fecha_programada" value="{{ old('fecha_programada', now()->toDateString()) }}" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none">
+                <input name="zona" value="{{ old('zona') }}" placeholder="Zona afectada" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none" data-zona-input>
+                <select name="estado" class="theme-soft h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_proceso">En proceso</option>
+                    <option value="completada">Completada</option>
+                    <option value="cancelada">Cancelada</option>
+                </select>
+                <textarea name="descripcion" class="theme-soft lg:col-span-2 min-h-28 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" placeholder="Detalle del corte, causa y observaciones de campo">{{ old('descripcion') }}</textarea>
+                <div class="lg:col-span-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800" data-socio-summary>
+                    Selecciona un socio para ver deuda pendiente y completar más rápido la orden de corte.
+                </div>
+                <button type="submit" class="lg:col-span-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600">Registrar corte</button>
+            </form>
+        </article>
+
+        <article class="space-y-6">
+            <div class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                <h2 class="theme-text text-xl font-semibold text-slate-900 dark:text-slate-100">Candidatos automaticos a corte</h2>
+                <div class="mt-5 space-y-3">
+                    @forelse ($attentionQueue as $candidate)
+                        <a href="{{ route('tecnico.cortes.index', ['socio' => $candidate['id_socio']]) }}" class="block rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 transition hover:bg-rose-100">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-900">{{ $candidate['codigo'] }} · {{ $candidate['nombre'] }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $candidate['zona'] }}</p>
+                                    <p class="mt-2 text-sm text-rose-700">{{ $candidate['motivo'] }}</p>
+                                </div>
+                                <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-700">Bs {{ number_format((float) $candidate['total_pendiente'], 2) }}</span>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+                            No hay cortes obligatorios detectados en este momento.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="theme-card rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <h2 class="theme-text text-xl font-semibold text-slate-900 dark:text-slate-100">Cortes recientes</h2>
+            <div class="mt-5 space-y-3">
+                @forelse ($recentOrders as $order)
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $order->socio?->codigo_display ?? 'Sin socio' }} · {{ $order->socio?->persona?->nombre_completo ?? $order->zona }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $order->referencia ?: 'Sin referencia' }}</p>
+                            </div>
+                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{{ ucfirst($order->estado) }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">Aun no hay cortes registrados.</div>
+                @endforelse
+            </div>
+            </div>
+        </article>
+    </section>
+
+    @push('scripts')
+    <script>
+        (() => {
+            const form = document.querySelector('[data-tech-order-form="corte"]');
+            if (!form) return;
+
+            const socioSelect = form.querySelector('[data-socio-select]');
+            const referenciaInput = form.querySelector('[data-referencia-input]');
+            const zonaInput = form.querySelector('[data-zona-input]');
+            const summary = form.querySelector('[data-socio-summary]');
+
+            const sync = () => {
+                const selected = socioSelect?.selectedOptions?.[0];
+                if (!selected) return;
+
+                if (zonaInput) {
+                    zonaInput.value = selected.dataset.zona || '';
+                }
+
+                if (referenciaInput) {
+                    referenciaInput.value = selected.dataset.referencia || '';
+                }
+
+                if (summary) {
+                    summary.textContent = selected.dataset.resumen || 'Sin resumen comercial disponible.';
+                }
+            };
+
+            socioSelect?.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
+    @endpush
+@endcomponent

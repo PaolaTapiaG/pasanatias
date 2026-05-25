@@ -15,6 +15,8 @@ class Factura extends Model
         'numero_factura',
         'fecha_emision',
         'fecha_pago',
+        'fecha_inicio_cobro',
+        'fecha_fin_cobro',
         'consumo_m3',
         'monto_consumo',
         'cargo_fijo',
@@ -31,6 +33,8 @@ class Factura extends Model
     protected $casts = [
         'fecha_emision' => 'date',
         'fecha_pago' => 'date',
+        'fecha_inicio_cobro' => 'date',
+        'fecha_fin_cobro' => 'date',
         'consumo_m3' => 'decimal:2',
         'monto_consumo' => 'decimal:2',
         'cargo_fijo' => 'decimal:2',
