@@ -28,6 +28,8 @@ CREATE TABLE personas (
   cedula_identidad VARCHAR(20) NOT NULL UNIQUE,
   telefono VARCHAR(20),
   email VARCHAR(150) UNIQUE,
+  fecha_nacimiento DATE,
+  foto_path VARCHAR(255),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -225,7 +227,7 @@ CREATE TABLE auditoria (
   datos_despues JSONB
 );
 
-CREATE OR REPLACE VIEW v_socios AS
+CREATE OR REPLACE VIEW v_socios WITH (security_invoker = true) AS
 SELECT
   s.id_socio,
   s.numero_socio,
@@ -246,7 +248,7 @@ JOIN personas p ON p.id_persona = s.id_persona
 JOIN sectores sec ON sec.id_sector = s.id_sector
 JOIN tarifas t ON t.id_tarifa = s.id_tarifa;
 
-CREATE OR REPLACE VIEW v_empleados AS
+CREATE OR REPLACE VIEW v_empleados WITH (security_invoker = true) AS
 SELECT
   e.id_empleado,
   p.nombres,
@@ -261,7 +263,7 @@ FROM empleados e
 JOIN personas p ON p.id_persona = e.id_persona
 JOIN roles r ON r.id_rol = e.id_rol;
 
-CREATE OR REPLACE VIEW v_saldo_socios AS
+CREATE OR REPLACE VIEW v_saldo_socios WITH (security_invoker = true) AS
 SELECT
   s.id_socio,
   p.nombres || ' ' || p.apellidos AS socio,
@@ -281,7 +283,7 @@ LEFT JOIN facturas f ON f.id_socio = s.id_socio
   AND f.estado IN ('pendiente', 'parcial', 'vencida')
 GROUP BY s.id_socio, p.nombres, p.apellidos, s.numero_socio;
 
-CREATE OR REPLACE VIEW v_cobros_periodo_actual AS
+CREATE OR REPLACE VIEW v_cobros_periodo_actual WITH (security_invoker = true) AS
 SELECT
   pf.nombre AS periodo,
   COUNT(c.id_cobro) AS total_cobros,

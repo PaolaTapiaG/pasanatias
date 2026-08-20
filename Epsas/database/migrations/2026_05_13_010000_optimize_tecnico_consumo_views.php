@@ -15,7 +15,7 @@ return new class extends Migration
         DB::statement('CREATE INDEX IF NOT EXISTS idx_socios_persona_sector ON socios (id_persona, id_sector)');
 
         DB::statement(<<<'SQL'
-CREATE OR REPLACE VIEW v_tecnico_medidores_consumo AS
+CREATE OR REPLACE VIEW v_tecnico_medidores_consumo WITH (security_invoker = true) AS
 SELECT
     m.id_medidor,
     m.numero_serie,
@@ -41,7 +41,7 @@ WHERE m.estado = 'activo'
 SQL);
 
         DB::statement(<<<'SQL'
-CREATE OR REPLACE VIEW v_tecnico_lecturas_recientes AS
+CREATE OR REPLACE VIEW v_tecnico_lecturas_recientes WITH (security_invoker = true) AS
 SELECT
     l.id_lectura,
     l.fecha_lectura,

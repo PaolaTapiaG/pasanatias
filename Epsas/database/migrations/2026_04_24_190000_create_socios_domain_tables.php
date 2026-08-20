@@ -16,6 +16,8 @@ return new class extends Migration
                 $table->string('cedula_identidad')->unique();
                 $table->string('telefono')->nullable();
                 $table->string('email')->nullable();
+                $table->date('fecha_nacimiento')->nullable();
+                $table->string('foto_path')->nullable();
                 $table->timestamps();
             });
         }
@@ -64,12 +66,14 @@ return new class extends Migration
         if (!Schema::hasTable('medidores')) {
             Schema::create('medidores', function (Blueprint $table) {
                 $table->id('id_medidor');
-                $table->string('numero_medidor')->unique();
+                $table->string('numero_serie')->unique();
                 $table->string('marca')->nullable();
                 $table->string('modelo')->nullable();
                 $table->date('fecha_instalacion')->nullable();
                 $table->string('estado')->default('activo');
                 $table->foreignId('id_socio')->nullable()->constrained('socios', 'id_socio')->nullOnDelete();
+                $table->foreignId('id_empleado_instalador')->nullable()->constrained('empleados', 'id_empleado')->nullOnDelete();
+                $table->timestamps();
             });
         }
 

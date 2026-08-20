@@ -18,7 +18,7 @@ return new class extends Migration
         DB::statement('CREATE INDEX IF NOT EXISTS idx_empleados_persona ON empleados (id_persona)');
 
         DB::statement(<<<'SQL'
-CREATE OR REPLACE VIEW v_tecnico_socios_catalogo AS
+CREATE OR REPLACE VIEW v_tecnico_socios_catalogo WITH (security_invoker = true) AS
 SELECT
     s.id_socio,
     COALESCE(s.numero_socio, 'SOC-' || LPAD(s.id_socio::text, 4, '0')) AS codigo_display,
@@ -35,7 +35,7 @@ LEFT JOIN sectores sec ON sec.id_sector = s.id_sector
 SQL);
 
         DB::statement(<<<'SQL'
-CREATE OR REPLACE VIEW v_tecnico_ordenes_recientes AS
+CREATE OR REPLACE VIEW v_tecnico_ordenes_recientes WITH (security_invoker = true) AS
 SELECT
     ot.id_orden,
     ot.tipo,
@@ -60,7 +60,7 @@ LEFT JOIN medidores m ON m.id_medidor = ot.id_medidor
 SQL);
 
         DB::statement(<<<'SQL'
-CREATE OR REPLACE VIEW v_tecnico_lecturas_index AS
+CREATE OR REPLACE VIEW v_tecnico_lecturas_index WITH (security_invoker = true) AS
 SELECT
     l.id_lectura,
     l.fecha_lectura,
